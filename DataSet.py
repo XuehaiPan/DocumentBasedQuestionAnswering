@@ -17,7 +17,8 @@ def quest_ans_label_generator(dataset):
                                  f'  File \"{DATA_FILE_PATH[dataset]}\", line {i}\n'
                                  f'     original: \"{line.rstrip()}\"\n'
                                  f'     split: {split}\n')
-            yield split
+            quest, ans, label = split
+            yield quest, ans, int(label)
 
 
 # add alias
@@ -25,6 +26,10 @@ data_generator = quest_ans_label_generator
 
 
 def draw_data_distribution():
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    
     def get_seq_len(dataset):
         quest_seq_len = []
         ans_seq_len = []
@@ -37,27 +42,27 @@ def draw_data_distribution():
         return np.array(quest_seq_len, dtype = np.int32), np.array(ans_seq_len, dtype = np.int32)
     
     def plot_dist(dataset, quest_seq_len, ans_seq_len, quest_ax, ans_ax):
+        max_ans_len = 300
+        assert np.quantile(ans_seq_len, q = 0.99) <= max_ans_len
         sns.distplot(quest_seq_len, color = next(color)['color'],
                      kde = True, kde_kws = {'label': 'kernel density estimation'},
                      label = 'data', ax = quest_ax)
-        sns.distplot(ans_seq_len[ans_seq_len <= 400], color = next(color)['color'],
+        sns.distplot(ans_seq_len[ans_seq_len <= max_ans_len], color = next(color)['color'],
                      kde = True, kde_kws = {'label': 'kernel density estimation'},
                      label = 'data', ax = ans_ax)
         for q in (0.25, 0.50, 0.75):
-            quest_ax.axvline(x = np.quantile(quest_seq_len, q), linestyle = '-.', color = 'black', alpha = 0.5)
-            ans_ax.axvline(x = np.quantile(ans_seq_len, q), linestyle = '-.', color = 'black', alpha = 0.5)
+            quest_ax.axvline(x = np.quantile(quest_seq_len, q = q),
+                             linestyle = '-.', color = 'black', alpha = 0.5)
+            ans_ax.axvline(x = np.quantile(ans_seq_len, q = q),
+                           linestyle = '-.', color = 'black', alpha = 0.5)
         quest_ax.set_xlim(left = 0)
-        ans_ax.set_xlim(left = 0, right = 400)
+        ans_ax.set_xlim(left = 0, right = max_ans_len)
         quest_ax.set_title(label = f'Question Length ({dataset})')
         ans_ax.set_title(label = f'Answer Length ({dataset})')
         for ax in (quest_ax, ans_ax):
             ax.set_xlabel(xlabel = 'length')
             ax.set_ylabel(ylabel = 'probability')
             ax.legend()
-    
-    import numpy as np
-    import matplotlib.pyplot as plt
-    import seaborn as sns
     
     fig, axes = plt.subplots(nrows = 3, ncols = 2, figsize = (12, 18))
     train_quest_seq_len, train_ans_seq_len = get_seq_len(dataset = 'train')
@@ -74,11 +79,11 @@ def draw_data_distribution():
               quest_seq_len = valid_quest_seq_len, ans_seq_len = valid_ans_seq_len,
               quest_ax = axes[1, 0], ans_ax = axes[1, 1])
     
-    quest_seq_len = np.concatenate([train_quest_seq_len, valid_quest_seq_len])
-    ans_seq_len = np.concatenate([train_ans_seq_len, valid_ans_seq_len])
+    all_quest_seq_len = np.concatenate([train_quest_seq_len, valid_quest_seq_len])
+    all_ans_seq_len = np.concatenate([train_ans_seq_len, valid_ans_seq_len])
     
     plot_dist(dataset = 'all',
-              quest_seq_len = quest_seq_len, ans_seq_len = ans_seq_len,
+              quest_seq_len = all_quest_seq_len, ans_seq_len = all_ans_seq_len,
               quest_ax = axes[2, 0], ans_ax = axes[2, 1])
     
     fig.tight_layout()
