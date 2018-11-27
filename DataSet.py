@@ -19,6 +19,10 @@ def quest_ans_label_generator(dataset):
             yield split
 
 
+# add alias
+data_generator = quest_ans_label_generator
+
+
 def draw_data_distribution():
     def get_seq_len(dataset):
         quest_seq_len = []
@@ -31,18 +35,23 @@ def draw_data_distribution():
             ans_seq_len.append(len(ans))
         return np.array(quest_seq_len, dtype = np.int32), np.array(ans_seq_len, dtype = np.int32)
     
-    def plot_dist(quest_seq_len, ans_seq_len, quest_ax, ans_ax, title):
-        sns.distplot(quest_seq_len, color = next(color)['color'], kde = False, label = 'Question', ax = quest_ax)
-        sns.distplot(ans_seq_len[ans_seq_len <= 400], color = next(color)['color'], kde = False, label = 'Answer', ax = ans_ax)
+    def plot_dist(dataset, quest_seq_len, ans_seq_len, quest_ax, ans_ax):
+        sns.distplot(quest_seq_len, color = next(color)['color'],
+                     kde = True, kde_kws = {'label': 'kernel density estimation'},
+                     label = 'data', ax = quest_ax)
+        sns.distplot(ans_seq_len[ans_seq_len <= 400], color = next(color)['color'],
+                     kde = True, kde_kws = {'label': 'kernel density estimation'},
+                     label = 'data', ax = ans_ax)
         for q in (0.25, 0.50, 0.75):
             quest_ax.axvline(x = np.quantile(quest_seq_len, q), linestyle = '-.', color = 'black', alpha = 0.5)
             ans_ax.axvline(x = np.quantile(ans_seq_len, q), linestyle = '-.', color = 'black', alpha = 0.5)
         quest_ax.set_xlim(left = 0)
         ans_ax.set_xlim(left = 0, right = 400)
+        quest_ax.set_title(label = f'Question Length ({dataset})')
+        ans_ax.set_title(label = f'Answer Length ({dataset})')
         for ax in (quest_ax, ans_ax):
             ax.set_xlabel(xlabel = 'length')
-            ax.set_ylabel(ylabel = 'frequency')
-            ax.set_title(label = title)
+            ax.set_ylabel(ylabel = 'probability')
             ax.legend()
     
     import numpy as np
@@ -56,20 +65,20 @@ def draw_data_distribution():
     color = plt.rcParamsDefault['axes.prop_cycle']
     color = iter(color)
     
-    plot_dist(quest_seq_len = train_quest_seq_len, ans_seq_len = train_ans_seq_len,
-              quest_ax = axes[0, 0], ans_ax = axes[0, 1],
-              title = 'Sequence Length in Training Data')
+    plot_dist(dataset = 'train',
+              quest_seq_len = train_quest_seq_len, ans_seq_len = train_ans_seq_len,
+              quest_ax = axes[0, 0], ans_ax = axes[0, 1])
     
-    plot_dist(quest_seq_len = valid_quest_seq_len, ans_seq_len = valid_ans_seq_len,
-              quest_ax = axes[1, 0], ans_ax = axes[1, 1],
-              title = 'Sequence Length in Validation Data')
+    plot_dist(dataset = 'validation',
+              quest_seq_len = valid_quest_seq_len, ans_seq_len = valid_ans_seq_len,
+              quest_ax = axes[1, 0], ans_ax = axes[1, 1])
     
     quest_seq_len = np.concatenate([train_quest_seq_len, valid_quest_seq_len])
     ans_seq_len = np.concatenate([train_ans_seq_len, valid_ans_seq_len])
     
-    plot_dist(quest_seq_len = quest_seq_len, ans_seq_len = ans_seq_len,
-              quest_ax = axes[2, 0], ans_ax = axes[2, 1],
-              title = 'Sequence Length in All Data')
+    plot_dist(dataset = 'all',
+              quest_seq_len = quest_seq_len, ans_seq_len = ans_seq_len,
+              quest_ax = axes[2, 0], ans_ax = axes[2, 1])
     
     fig.tight_layout()
     fig.savefig(fname = './data_dist.png')
