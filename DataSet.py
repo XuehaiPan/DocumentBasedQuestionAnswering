@@ -1,17 +1,4 @@
-import os
-
-
-data_dir = './data/'
-data_file_path = {
-    name: os.path.join(data_dir, '{}-set.data'.format(name))
-    for name in ('train', 'validation', 'test')
-}
-
-# test data not given yet
-del data_file_path['test']
-
-POSITIVE = 1
-NEGATIVE = 0
+from Config import data_file_path
 
 
 def split_line(line):
@@ -19,20 +6,20 @@ def split_line(line):
 
 
 def quest_ans_label_generator(dataset):
-    # add alias
     if 'valid' in dataset:
-        dataset = 'validation'
+        dataset = 'validation'  # add alias
     with open(file = data_file_path[dataset], encoding = 'UTF-8') as file:
         for i, line in enumerate(file, start = 1):
             split = split_line(line = line)
             if len(split) != 3:
-                raise ValueError('Invalid data format.\n' +
-                                 '  File \"{}\", line {}\n'.format(data_file_path[dataset], i) +
-                                 '     original: \"{}\"\n     split: {}\n'.format(line.rstrip(), split))
+                raise ValueError('Invalid data format.\n'
+                                 f'  File \"{data_file_path[dataset]}\", line {i}\n'
+                                 f'     original: \"{line.rstrip()}\"\n'
+                                 f'     split: {split}\n')
             yield split
 
 
-def main():
+def draw_data_distribution():
     def get_seq_len(dataset):
         quest_seq_len = []
         ans_seq_len = []
@@ -43,6 +30,20 @@ def main():
                 questions.add(quest)
             ans_seq_len.append(len(ans))
         return np.array(quest_seq_len, dtype = np.int32), np.array(ans_seq_len, dtype = np.int32)
+    
+    def plot_dist(quest_seq_len, ans_seq_len, quest_ax, ans_ax, title):
+        sns.distplot(quest_seq_len, color = next(color)['color'], kde = False, label = 'Question', ax = quest_ax)
+        sns.distplot(ans_seq_len[ans_seq_len <= 400], color = next(color)['color'], kde = False, label = 'Answer', ax = ans_ax)
+        for q in (0.25, 0.50, 0.75):
+            quest_ax.axvline(x = np.quantile(quest_seq_len, q), linestyle = '-.', color = 'black', alpha = 0.5)
+            ans_ax.axvline(x = np.quantile(ans_seq_len, q), linestyle = '-.', color = 'black', alpha = 0.5)
+        quest_ax.set_xlim(left = 0)
+        ans_ax.set_xlim(left = 0, right = 400)
+        for ax in (quest_ax, ans_ax):
+            ax.set_xlabel(xlabel = 'length')
+            ax.set_ylabel(ylabel = 'frequency')
+            ax.set_title(label = title)
+            ax.legend()
     
     import numpy as np
     import matplotlib.pyplot as plt
@@ -55,54 +56,28 @@ def main():
     color = plt.rcParamsDefault['axes.prop_cycle']
     color = iter(color)
     
-    sns.distplot(train_quest_seq_len, color = next(color)['color'], kde = False, label = 'Question', ax = axes[0, 0])
-    axes[0, 0].set_xlim(left = 0)
-    axes[0, 0].set_xlabel('length')
-    axes[0, 0].set_ylabel('frequency')
-    axes[0, 0].set_title('Sequence Length in Training Data')
-    axes[0, 0].legend()
+    plot_dist(quest_seq_len = train_quest_seq_len, ans_seq_len = train_ans_seq_len,
+              quest_ax = axes[0, 0], ans_ax = axes[0, 1],
+              title = 'Sequence Length in Training Data')
     
-    sns.distplot(train_ans_seq_len[train_ans_seq_len <= 400], color = next(color)['color'], kde = False, label = 'Answer', ax = axes[0, 1])
-    axes[0, 1].set_xlim(left = 0, right = 400)
-    axes[0, 1].set_xlabel('length')
-    axes[0, 1].set_ylabel('frequency')
-    axes[0, 1].set_title('Sequence Length in Training Data')
-    axes[0, 1].legend()
-    
-    sns.distplot(valid_quest_seq_len, color = next(color)['color'], kde = False, label = 'Question', ax = axes[1, 0])
-    axes[1, 0].set_xlim(left = 0)
-    axes[1, 0].set_xlabel('length')
-    axes[1, 0].set_ylabel('frequency')
-    axes[1, 0].set_title('Sequence Length in Validation Data')
-    axes[1, 0].legend()
-    
-    sns.distplot(valid_ans_seq_len[valid_ans_seq_len <= 400], color = next(color)['color'], kde = False, label = 'Answer', ax = axes[1, 1])
-    axes[1, 1].set_xlim(left = 0, right = 400)
-    axes[1, 1].set_xlabel('length')
-    axes[1, 1].set_ylabel('frequency')
-    axes[1, 1].set_title('Sequence Length in Validation Data')
-    axes[1, 1].legend()
+    plot_dist(quest_seq_len = valid_quest_seq_len, ans_seq_len = valid_ans_seq_len,
+              quest_ax = axes[1, 0], ans_ax = axes[1, 1],
+              title = 'Sequence Length in Validation Data')
     
     quest_seq_len = np.concatenate([train_quest_seq_len, valid_quest_seq_len])
     ans_seq_len = np.concatenate([train_ans_seq_len, valid_ans_seq_len])
     
-    sns.distplot(quest_seq_len, color = next(color)['color'], kde = False, label = 'Question', ax = axes[2, 0])
-    axes[2, 0].set_xlim(left = 0)
-    axes[2, 0].set_xlabel('length')
-    axes[2, 0].set_ylabel('frequency')
-    axes[2, 0].set_title('Sequence Length in All Data')
-    axes[2, 0].legend()
-    
-    sns.distplot(ans_seq_len[ans_seq_len <= 400], color = next(color)['color'], kde = False, label = 'Answer', ax = axes[2, 1])
-    axes[2, 1].set_xlim(left = 0, right = 400)
-    axes[2, 1].set_xlabel('length')
-    axes[2, 1].set_ylabel('frequency')
-    axes[2, 1].set_title('Sequence Length in All Data')
-    axes[2, 1].legend()
+    plot_dist(quest_seq_len = quest_seq_len, ans_seq_len = ans_seq_len,
+              quest_ax = axes[2, 0], ans_ax = axes[2, 1],
+              title = 'Sequence Length in All Data')
     
     fig.tight_layout()
     fig.savefig(fname = './data_dist.png')
     fig.show()
+
+
+def main():
+    draw_data_distribution()
 
 
 if __name__ == '__main__':
