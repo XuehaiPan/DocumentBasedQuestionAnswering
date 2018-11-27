@@ -1,4 +1,5 @@
-from Config import data_file_path
+import os
+from Config import DATA_FILE_PATH, FIGURE_DIR
 
 
 def split_line(line):
@@ -8,12 +9,12 @@ def split_line(line):
 def quest_ans_label_generator(dataset):
     if 'valid' in dataset:
         dataset = 'validation'  # add alias
-    with open(file = data_file_path[dataset], encoding = 'UTF-8') as file:
+    with open(file = DATA_FILE_PATH[dataset], encoding = 'UTF-8') as file:
         for i, line in enumerate(file, start = 1):
             split = split_line(line = line)
             if len(split) != 3:
                 raise ValueError('Invalid data format.\n'
-                                 f'  File \"{data_file_path[dataset]}\", line {i}\n'
+                                 f'  File \"{DATA_FILE_PATH[dataset]}\", line {i}\n'
                                  f'     original: \"{line.rstrip()}\"\n'
                                  f'     split: {split}\n')
             yield split
@@ -81,7 +82,7 @@ def draw_data_distribution():
               quest_ax = axes[2, 0], ans_ax = axes[2, 1])
     
     fig.tight_layout()
-    fig.savefig(fname = './data_dist.png')
+    fig.savefig(fname = os.path.join(FIGURE_DIR, 'data_dist.png'))
     fig.show()
 
 
