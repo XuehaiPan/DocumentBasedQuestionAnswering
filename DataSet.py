@@ -34,11 +34,11 @@ def draw_data_distribution() -> None:
     def get_seq_len(dataset) -> Tuple[np.ndarray, np.ndarray]:
         quest_seq_len: List[int] = []
         ans_seq_len: List[int] = []
-        questions: Set[str] = set()
-        for quest, ans, label in quest_ans_label_generator(dataset = dataset):
-            if quest not in questions:
+        quest_set: Set[str] = set()
+        for quest, ans, _ in quest_ans_label_generator(dataset = dataset):
+            if quest not in quest_set:
                 quest_seq_len.append(len(quest))
-                questions.add(quest)
+                quest_set.add(quest)
             ans_seq_len.append(len(ans))
         return np.array(quest_seq_len, dtype = np.int32), np.array(ans_seq_len, dtype = np.int32)
     
