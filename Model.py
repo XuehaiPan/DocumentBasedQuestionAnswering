@@ -2,7 +2,7 @@ import os
 from typing import List
 from glob import glob
 from tensorflow import keras
-from Config import MODEL_DIR, LATEST_MODEL_PATH, MODEL_FILE_PATTERN, lr, decay
+from Config import MODEL_DIR, LATEST_MODEL_PATH, MODEL_FILE_PATTERN, initial_lr, initial_decay
 
 
 def get_model_paths(sortby: str = 'epoch', reverse: bool = False) -> List[str]:
@@ -10,7 +10,8 @@ def get_model_paths(sortby: str = 'epoch', reverse: bool = False) -> List[str]:
     if 'acc' in sortby:
         sortby = 'val_acc'
     model_paths: List[str] = glob(pathname = os.path.join(MODEL_DIR, 'epoch*_acc*.h5'))
-    model_paths.sort(key = lambda file: float(MODEL_FILE_PATTERN.match(file).group(sortby)), reverse = reverse)
+    model_paths.sort(key = lambda file: float(MODEL_FILE_PATTERN.match(file).group(sortby)),
+                     reverse = reverse)
     return model_paths
 
 
@@ -32,13 +33,14 @@ def build_network(model_path: str = None) -> keras.Model:
     inputs = keras.layers.Input(shape = None, name = 'inputs')
     
     # TODO: implement network
+    raise NotImplementedError
     
     # Outputs
     outputs = inputs
     
     model = keras.Model(inputs = inputs, outputs = outputs)
     
-    RMSprop_Optimizer = keras.optimizers.RMSprop(lr = lr, decay = decay)
+    RMSprop_Optimizer = keras.optimizers.RMSprop(lr = initial_lr, decay = initial_decay)
     model.compile(optimizer = RMSprop_Optimizer, loss = 'binary_crossentropy', metrics = ['acc'])
     model.save(filepath = LATEST_MODEL_PATH)
     

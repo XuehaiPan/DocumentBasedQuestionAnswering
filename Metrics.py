@@ -13,12 +13,12 @@ for dataset in DATA_FILE_PATH:
 
 def mean_average_precision():
     # TODO: implement mean_average_precision
-    pass
+    raise NotImplementedError
 
 
 def mean_reciprocal_rank():
     # TODO: implement mean_average_precision
-    pass
+    raise NotImplementedError
 
 
 # add aliases

@@ -10,10 +10,10 @@ os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 BATCH_SIZE = 64
 
 # initial learning rate
-lr = 1E-3
+initial_lr = 1E-3
 
-# learning rate decay over each update
-decay = 1E-4
+# learning rate initial_decay over each update
+initial_decay = 1E-4
 
 # labels
 POSITIVE: int = 1
