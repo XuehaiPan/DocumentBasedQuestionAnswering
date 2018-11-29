@@ -1,10 +1,10 @@
 from typing import List
 from tensorflow import keras
-from DataSet import quest_ans_label_generator
-from Config import BATCH_SIZE, \
+from dataset import quest_ans_label_generator
+from config import BATCH_SIZE, \
     MODEL_FMT_STR, MODEL_FILE_PATTERN, LATEST_MODEL_PATH, \
     LOG_DIR, LOG_FILE_PATH
-from Model import get_model_paths, build_network
+from model import get_model_paths, build_network
 
 
 class MyTensorBoard(keras.callbacks.TensorBoard):

@@ -1,6 +1,6 @@
 import os
 from typing import List, Tuple, Set, Dict
-from Config import DATA_FILE_PATH, FIGURE_DIR
+from config import DATA_FILE_PATH, FIGURE_DIR
 
 
 def split_line(line: str) -> List[str]:

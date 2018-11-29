@@ -1,6 +1,6 @@
 from typing import Set, Dict
-from Config import DATA_FILE_PATH
-from DataSet import quest_ans_label_generator
+from config import DATA_FILE_PATH
+from dataset import quest_ans_label_generator
 
 
 QUESTION_NUM: Dict[str, int] = {}
