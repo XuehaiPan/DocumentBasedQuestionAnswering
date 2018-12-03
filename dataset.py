@@ -59,11 +59,34 @@ def draw_data_distribution() -> None:
         quest_seq_len: List[int] = []
         ans_seq_len: List[int] = []
         quest_set: Set[str] = set()
+        longest_quest = ''
+        max_quest_len = 0
+        longest_ans = ''
+        longest_ans_quest = ''
+        max_ans_len = 0
         for quest, ans, _ in quest_ans_label_generator(dataset = dataset):
             if quest not in quest_set:
-                quest_seq_len.append(len(cut_sentence(sentence = quest)))
+                quest_len = len(cut_sentence(sentence = quest))
+                quest_seq_len.append(quest_len)
+                if quest_len > max_quest_len:
+                    longest_quest, max_quest_len = quest, quest_len
                 quest_set.add(quest)
-            ans_seq_len.append(len(cut_sentence(sentence = ans)))
+            ans_len = len(cut_sentence(sentence = ans))
+            ans_seq_len.append(ans_len)
+            if ans_len > max_ans_len:
+                longest_ans, longest_ans_quest, max_ans_len = ans, quest, ans_len
+        print(f'{{\n'
+              f'    dataset: {dataset}\n'
+              f'    \n'
+              f'    longest_question: \'{longest_quest}\',\n'
+              f'    cut_longest_question: {cut_sentence(sentence = longest_quest)}\n'
+              f'    max_question_len: {max_quest_len}\n'
+              f'    \n'
+              f'    longest_answer: \'{longest_ans}\',\n'
+              f'    cut_longest_answer: {cut_sentence(sentence = longest_ans)}\n'
+              f'    question_of_longest_answer: \'{longest_ans_quest}\',\n'
+              f'    max_answer_len: {max_ans_len}\n'
+              f'}}')
         return np.array(quest_seq_len, dtype = np.int32), np.array(ans_seq_len, dtype = np.int32)
     
     def plot_dist(dataset: str,
@@ -87,15 +110,15 @@ def draw_data_distribution() -> None:
         quest_ax.set_title(label = f'Question Length ({dataset})')
         ans_ax.set_title(label = f'Answer Length ({dataset})')
         for ax in (quest_ax, ans_ax):
-            ax.set_xlabel(xlabel = 'length')
-            ax.set_ylabel(ylabel = 'probability')
+            ax.set_xlabel(xlabel = 'Word Count')
+            ax.set_ylabel(ylabel = 'Relative Frequency')
             ax.legend()
     
     fig: plt.Figure
     axes: Dict[Tuple[int, int], plt.Axes]
-    fig, axes = plt.subplots(nrows = 3, ncols = 2, figsize = (12, 18))
+    fig, axes = plt.subplots(nrows = 3, ncols = 2, figsize = (12, 18), dpi = 250)
     train_quest_seq_len, train_ans_seq_len = get_seq_len(dataset = 'train')
-    valid_quest_seq_len, valid_ans_seq_len = get_seq_len(dataset = 'valid')
+    valid_quest_seq_len, valid_ans_seq_len = get_seq_len(dataset = 'validation')
     
     color = plt.rcParamsDefault['axes.prop_cycle']
     color = iter(map(lambda c: c['color'], color))
