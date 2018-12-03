@@ -7,13 +7,19 @@ from typing import Dict, Pattern
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 # batch size
-BATCH_SIZE = 64
+BATCH_SIZE: int = 64
+
+# word vector size
+VEC_SIZE: int = 128
 
 # initial learning rate
-initial_lr = 1E-3
+INITIAL_LR: float = 1E-3
 
-# learning rate initial_decay over each update
-initial_decay = 1E-4
+# learning rate decay over each update
+INITIAL_DECAY: float = 1E-4
+
+# workers
+WORKERS: int = 4
 
 # labels
 POSITIVE: int = 1
@@ -33,11 +39,13 @@ MODEL_DIR: str = './models/'
 LOG_DIR: str = './logs/'
 
 for DIR in (FIGURE_DIR, MODEL_DIR, LOG_DIR):
-    if not os.path.exists(DIR):
-        os.mkdir(DIR)
+    os.makedirs(DIR, exist_ok = True)
 
+WORD2VEC_MODEL_PATH: str = os.path.join(MODEL_DIR, 'word2vec.model')
 LATEST_MODEL_PATH: str = os.path.join(MODEL_DIR, 'latest.h5')
 LOG_FILE_PATH: str = os.path.join(LOG_DIR, 'log.csv')
 
-MODEL_FILE_PATTERN: Pattern = re.compile(r'.*epoch(?P<epoch>\d*)_acc(?P<val_acc>[\d.]*)\.h5')
-MODEL_FMT_STR: str = os.path.join(MODEL_DIR, 'epoch{epoch:02d}_acc{val_acc:.4f}.h5')
+MODEL_FILE_PATTERN: Pattern = re.compile(
+        r'.*epoch(?P<epoch>\d*)_acc(?P<val_acc>[\d.]*)\.h5')
+MODEL_FMT_STR: str = os.path.join(
+        MODEL_DIR, 'epoch{epoch:02d}_acc{val_acc:.4f}.h5')

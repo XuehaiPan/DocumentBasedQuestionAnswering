@@ -1,5 +1,5 @@
 import os
-from typing import List, Tuple, Set, Dict
+from typing import List, Tuple, Set, Dict, Iterator
 from config import DATA_FILE_PATH, FIGURE_DIR
 
 
@@ -8,18 +8,20 @@ def split_line(line: str) -> List[str]:
 
 
 def quest_ans_label_generator(dataset: str) -> Tuple[str, str, int]:
-    if 'valid' in dataset:
-        dataset = 'validation'  # add alias
-    with open(file = DATA_FILE_PATH[dataset], encoding = 'UTF-8') as file:
+    if 'valid' in dataset:  # add alias
+        dataset = 'validation'
+    with open(file = DATA_FILE_PATH[dataset], mode = 'r', encoding = 'UTF-8') as file:
+        file: Iterator[str] = filter(None, map(str.strip, file))
         for i, line in enumerate(file, start = 1):
             split: List[str] = split_line(line = line)
-            if len(split) != 3:
+            try:
+                quest, ans, label = split
+                yield quest, ans, int(label)
+            except ValueError:  # assert len(split) == 3
                 raise ValueError('Invalid data format.\n'
                                  f'  File \"{DATA_FILE_PATH[dataset]}\", line {i}\n'
-                                 f'     original: \"{line.rstrip()}\"\n'
+                                 f'     original: \"{line}\"\n'
                                  f'     split: {split}\n')
-            quest, ans, label = split
-            yield quest, ans, int(label)
 
 
 # add alias
