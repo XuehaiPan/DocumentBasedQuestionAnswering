@@ -41,6 +41,7 @@ LOG_DIR: str = './logs/'
 for DIR in (FIGURE_DIR, MODEL_DIR, LOG_DIR):
     os.makedirs(DIR, exist_ok = True)
 
+DICTIONARY_PATH: str = os.path.join(MODEL_DIR, 'dictionary.txt')
 WORD2VEC_MODEL_PATH: str = os.path.join(MODEL_DIR, 'word2vec.model')
 LATEST_MODEL_PATH: str = os.path.join(MODEL_DIR, 'latest.h5')
 LOG_FILE_PATH: str = os.path.join(LOG_DIR, 'log.csv')

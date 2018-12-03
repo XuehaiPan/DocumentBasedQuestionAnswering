@@ -11,9 +11,8 @@ def get_word2vec_model() -> KeyedVectors:
         pass
     
     from gensim.models.callbacks import CallbackAny2Vec
-    import jieba
     from config import DATA_FILE_PATH, WORKERS
-    from dataset import quest_ans_label_generator
+    from dataset import quest_ans_label_generator, cut_sentence
     
     class EpochLogger(CallbackAny2Vec):
         """Callback to log information about training"""
@@ -39,7 +38,7 @@ def get_word2vec_model() -> KeyedVectors:
         for quest, ans, _ in quest_ans_label_generator(dataset = dataset):
             for sentence in (quest, ans):
                 if sentence not in sentence_set:
-                    sentences.append(jieba.cut(sentence = sentence, cut_all = False))
+                    sentences.append(cut_sentence(sentence = sentence))
                     sentence_set.add(sentence)
     
     epoch_logger = EpochLogger()

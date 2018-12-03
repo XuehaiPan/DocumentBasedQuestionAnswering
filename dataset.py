@@ -1,6 +1,7 @@
 import os
 from typing import List, Tuple, Set, Dict, Iterator
-from config import DATA_FILE_PATH, FIGURE_DIR
+from jieba import Tokenizer
+from config import DATA_FILE_PATH, DICTIONARY_PATH, FIGURE_DIR
 
 
 def split_line(line: str) -> List[str]:
@@ -27,6 +28,27 @@ def quest_ans_label_generator(dataset: str) -> Tuple[str, str, int]:
 # add alias
 data_generator = quest_ans_label_generator
 
+# tokenizer to cut sentence
+tokenizer: Tokenizer = Tokenizer(dictionary = None)
+
+if not os.path.exists(DICTIONARY_PATH):
+    from shutil import copyfile
+    
+    
+    # copy default dictionary
+    tokenizer.initialize(dictionary = None)
+    with tokenizer.get_dict_file() as default_dict:
+        copyfile(src = default_dict.name, dst = DICTIONARY_PATH)
+    
+    del copyfile
+
+# initialize tokenizer
+tokenizer.initialize(dictionary = DICTIONARY_PATH)
+
+
+def cut_sentence(sentence: str) -> List[str]:
+    return list(tokenizer.cut(sentence = sentence, cut_all = False, HMM = True))
+
 
 def draw_data_distribution() -> None:
     import numpy as np
@@ -39,20 +61,20 @@ def draw_data_distribution() -> None:
         quest_set: Set[str] = set()
         for quest, ans, _ in quest_ans_label_generator(dataset = dataset):
             if quest not in quest_set:
-                quest_seq_len.append(len(quest))
+                quest_seq_len.append(len(cut_sentence(sentence = quest)))
                 quest_set.add(quest)
-            ans_seq_len.append(len(ans))
+            ans_seq_len.append(len(cut_sentence(sentence = ans)))
         return np.array(quest_seq_len, dtype = np.int32), np.array(ans_seq_len, dtype = np.int32)
     
     def plot_dist(dataset: str,
                   quest_seq_len: np.ndarray, ans_seq_len: np.ndarray,
                   quest_ax: plt.Axes, ans_ax: plt.Axes) -> None:
-        max_ans_len: int = 300
+        max_ans_len: int = 160
         assert np.quantile(ans_seq_len, q = 0.99) <= max_ans_len
-        sns.distplot(quest_seq_len, color = next(color)['color'],
+        sns.distplot(quest_seq_len, bins = quest_seq_len.max(), color = next(color),
                      kde = True, kde_kws = {'label': 'kernel density estimation'},
                      label = 'data', ax = quest_ax)
-        sns.distplot(ans_seq_len[ans_seq_len <= max_ans_len], color = next(color)['color'],
+        sns.distplot(ans_seq_len[ans_seq_len <= max_ans_len], color = next(color),
                      kde = True, kde_kws = {'label': 'kernel density estimation'},
                      label = 'data', ax = ans_ax)
         for q in (0.25, 0.50, 0.75):
@@ -76,7 +98,7 @@ def draw_data_distribution() -> None:
     valid_quest_seq_len, valid_ans_seq_len = get_seq_len(dataset = 'valid')
     
     color = plt.rcParamsDefault['axes.prop_cycle']
-    color = iter(color)
+    color = iter(map(lambda c: c['color'], color))
     
     plot_dist(dataset = 'train',
               quest_seq_len = train_quest_seq_len, ans_seq_len = train_ans_seq_len,
