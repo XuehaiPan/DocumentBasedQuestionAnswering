@@ -1,4 +1,4 @@
-from typing import List, Set
+from typing import List
 import numpy as np
 from gensim.models import Word2Vec, KeyedVectors
 from config import WORD2VEC_MODEL_PATH, VEC_SIZE
@@ -32,14 +32,11 @@ def get_word2vec_model() -> KeyedVectors:
             print(f'Save model to {WORD2VEC_MODEL_PATH}')
             model.save(WORD2VEC_MODEL_PATH)
     
-    sentence_set: Set[str] = set()
     sentences: List[List[str]] = []
     for dataset in DATA_FILE_PATH:
-        for quest, ans, _ in quest_ans_label_generator(dataset = dataset):
-            for sentence in (quest, ans):
-                if sentence not in sentence_set:
-                    sentences.append(cut_sentence(sentence = sentence))
-                    sentence_set.add(sentence)
+        for quest, ans_list, _ in quest_ans_label_generator(dataset = dataset):
+            sentences.append(cut_sentence(sentence = quest))
+            sentences.extend(map(cut_sentence, ans_list))
     
     epoch_logger = EpochLogger()
     

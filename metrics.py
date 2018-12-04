@@ -5,9 +5,8 @@ from dataset import quest_ans_label_generator
 
 QUESTION_NUM: Dict[str, int] = {}
 for dataset in DATA_FILE_PATH:
-    quest_set: Set[str] = set()
-    for quest, _, _ in quest_ans_label_generator(dataset = dataset):
-        quest_set.add(quest)
+    quest_set: Set[str] = set(map(lambda data_tuple: data_tuple[0],
+                                  quest_ans_label_generator(dataset = dataset)))
     QUESTION_NUM[dataset] = len(quest_set)
 
 

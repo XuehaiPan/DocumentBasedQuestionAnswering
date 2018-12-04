@@ -4,29 +4,43 @@ from jieba import Tokenizer
 from config import DATA_FILE_PATH, DICTIONARY_PATH, FIGURE_DIR
 
 
-def split_line(line: str) -> List[str]:
-    return list(map(str.strip, line.split('\t')))
-
-
-def quest_ans_label_generator(dataset: str) -> Tuple[str, str, int]:
+def quest_ans_label_generator(dataset: str) -> Tuple[str, List[str], List[int]]:
+    def split_line(line: str) -> List[str]:
+        return list(map(str.strip, line.split('\t')))
+    
+    def data_tuple_generator(dataset: str) -> Tuple[str, str, int]:
+        with open(file = DATA_FILE_PATH[dataset], mode = 'r', encoding = 'UTF-8') as file:
+            file: Iterator[str] = filter(None, map(str.strip, file))
+            for i, line in enumerate(file, start = 1):
+                split: List[str] = split_line(line = line)
+                try:
+                    quest, ans, label = split
+                    yield quest, ans, int(label)
+                except ValueError:  # assert len(split) == 3
+                    raise ValueError('Invalid data format.\n'
+                                     f'  File \"{DATA_FILE_PATH[dataset]}\", line {i}\n'
+                                     f'     original: \"{line}\"\n'
+                                     f'     split: {split}\n')
+    
+    assert dataset in ('train', 'valid', 'validation', 'test')
     if 'valid' in dataset:  # add alias
         dataset = 'validation'
-    with open(file = DATA_FILE_PATH[dataset], mode = 'r', encoding = 'UTF-8') as file:
-        file: Iterator[str] = filter(None, map(str.strip, file))
-        for i, line in enumerate(file, start = 1):
-            split: List[str] = split_line(line = line)
-            try:
-                quest, ans, label = split
-                yield quest, ans, int(label)
-            except ValueError:  # assert len(split) == 3
-                raise ValueError('Invalid data format.\n'
-                                 f'  File \"{DATA_FILE_PATH[dataset]}\", line {i}\n'
-                                 f'     original: \"{line}\"\n'
-                                 f'     split: {split}\n')
+    cur_quest: str = None
+    ans_list: List[str] = []
+    label_list: List[int] = []
+    for quest, ans, label in data_tuple_generator(dataset = dataset):
+        if quest == cur_quest:
+            ans_list.append(ans)
+            label_list.append(label)
+        else:
+            if cur_quest is not None:
+                yield cur_quest, ans_list, label_list
+            cur_quest = quest
+            ans_list = []
+            label_list = []
+    if cur_quest is not None:
+        yield cur_quest, ans_list, label_list
 
-
-# add alias
-data_generator = quest_ans_label_generator
 
 # tokenizer to cut sentence
 tokenizer: Tokenizer = Tokenizer(dictionary = None)
@@ -55,7 +69,7 @@ def draw_data_distribution() -> None:
     import matplotlib.pyplot as plt
     import seaborn as sns
     
-    def get_seq_len(dataset) -> Tuple[np.ndarray, np.ndarray]:
+    def get_seq_len(dataset: str) -> Tuple[np.ndarray, np.ndarray]:
         quest_seq_len: List[int] = []
         ans_seq_len: List[int] = []
         quest_set: Set[str] = set()
@@ -64,29 +78,29 @@ def draw_data_distribution() -> None:
         longest_ans = ''
         longest_ans_quest = ''
         max_ans_len = 0
-        for quest, ans, _ in quest_ans_label_generator(dataset = dataset):
-            if quest not in quest_set:
-                quest_len = len(cut_sentence(sentence = quest))
-                quest_seq_len.append(quest_len)
-                if quest_len > max_quest_len:
-                    longest_quest, max_quest_len = quest, quest_len
+        for quest, ans_list, _ in quest_ans_label_generator(dataset = dataset):
+            quest_len = len(cut_sentence(sentence = quest))
+            quest_seq_len.append(quest_len)
+            if quest_len > max_quest_len:
+                longest_quest, max_quest_len = quest, quest_len
                 quest_set.add(quest)
-            ans_len = len(cut_sentence(sentence = ans))
-            ans_seq_len.append(ans_len)
-            if ans_len > max_ans_len:
-                longest_ans, longest_ans_quest, max_ans_len = ans, quest, ans_len
+            for ans in ans_list:
+                ans_len = len(cut_sentence(sentence = ans))
+                ans_seq_len.append(ans_len)
+                if ans_len > max_ans_len:
+                    longest_ans, longest_ans_quest, max_ans_len = ans, quest, ans_len
         print(f'{{\n'
               f'    dataset: {dataset}\n'
               f'    \n'
               f'    longest_question: \'{longest_quest}\',\n'
               f'    cut_longest_question: {cut_sentence(sentence = longest_quest)}\n'
-              f'    max_question_len: {max_quest_len}\n'
+              f'    max_question_word_count: {max_quest_len}\n'
               f'    \n'
               f'    longest_answer: \'{longest_ans}\',\n'
               f'    cut_longest_answer: {cut_sentence(sentence = longest_ans)}\n'
               f'    question_of_longest_answer: \'{longest_ans_quest}\',\n'
-              f'    max_answer_len: {max_ans_len}\n'
-              f'}}')
+              f'    max_answer_word_count: {max_ans_len}\n'
+              f'}}\n')
         return np.array(quest_seq_len, dtype = np.int32), np.array(ans_seq_len, dtype = np.int32)
     
     def plot_dist(dataset: str,
