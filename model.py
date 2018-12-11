@@ -5,10 +5,8 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from config import VEC_SIZE, MAX_QUERY_WC, MAX_DOC_WC, BIN_NUM, BATCH_SIZE, \
-    MODEL_DIR, LATEST_MODEL_PATH, MODEL_FILE_PATTERN, \
-    INITIAL_LR, INITIAL_DECAY
-from dataset import cut_sentence
-from word2vec import get_vectors
+    INITIAL_LR, INITIAL_DECAY, REGULARIZATION_PARAM, \
+    MODEL_DIR, LATEST_MODEL_PATH, MODEL_FILE_PATTERN
 
 
 tf.set_random_seed(seed = 0)
@@ -25,15 +23,6 @@ def get_model_paths(sort_by: str = 'epoch', reverse: bool = False) -> List[str]:
 
 
 def build_network(model_path: str = None) -> keras.Model:
-    def sent2vec(sent, max_wc):
-        embedded = np.zeros(shape = (BATCH_SIZE, MAX_QUERY_WC, VEC_SIZE), dtype = np.float32)
-        for s in range(BATCH_SIZE):
-            word_list = cut_sentence(sentence = sent[s])
-            vec_list = get_vectors(word_list = word_list)
-            for i, vec in zip(range(max_wc), vec_list):
-                embedded[i] = vec
-        return embedded
-    
     if model_path is None:
         try:
             model_paths: List[str] = get_model_paths(sort_by = 'val_acc', reverse = True)
@@ -75,7 +64,9 @@ def build_network(model_path: str = None) -> keras.Model:
     hidden_layer = bin_sum
     hidden_layer_sizes = [64, 32, 16, 1]
     for i, units in enumerate(hidden_layer_sizes, start = 3):
-        Dense_i = keras.layers.Dense(units = units, activation = None, name = f'Dense_{i}')
+        Dense_i = keras.layers.Dense(units = units, activation = None, use_bias = True,
+                                     kernel_regularizer = keras.regularizers.l2(l = REGULARIZATION_PARAM),
+                                     name = f'Dense_{i}')
         BatchNorm_i = keras.layers.BatchNormalization(name = f'BatchNorm_{i}')
         Tanh_i = keras.layers.Activation(activation = 'tanh', name = f'Tanh_{i}')
         hidden_layer = Dense_i(hidden_layer)  # shape == [BATCH_SIZE, MAX_QUERY_WC, units]
@@ -85,9 +76,11 @@ def build_network(model_path: str = None) -> keras.Model:
     last_hidden_layer = Reshape_6(hidden_layer)  # shape == [BATCH_SIZE, MAX_QUERY_WC]
     
     # Hidden Layer to Output Layer
-    Dense_7 = keras.layers.Dense(units = 1, use_bias = False)
+    Dense_7 = keras.layers.Dense(units = 1, activation = None, use_bias = False,
+                                 kernel_regularizer = keras.regularizers.l2(l = REGULARIZATION_PARAM),
+                                 name = 'Dense_7')
     Reshape_7 = keras.layers.Reshape(target_shape = (MAX_QUERY_WC,), name = 'Reshape_7')
-    Softmax_7 = keras.layers.Softmax()
+    Softmax_7 = keras.layers.Softmax(name = 'Softmax_7')
     query_weights = Dense_7(embedded_query)  # shape == [BATCH_SIZE, MAX_QUERY_WC, 1]
     query_weights = Reshape_7(query_weights)  # shape == [BATCH_SIZE, MAX_QUERY_WC]
     query_weights = Softmax_7(query_weights)  # shape == [BATCH_SIZE, MAX_QUERY_WC]

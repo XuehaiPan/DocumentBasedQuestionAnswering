@@ -1,10 +1,12 @@
 from typing import List
+import numpy as np
 from tensorflow import keras
-from dataset import query_doc_label_generator
-from .config import BATCH_SIZE, \
+from dataset import query_doc_label_generator, cut_sentence
+from word2vec import get_vectors
+from config import VEC_SIZE, MAX_QUERY_WC, MAX_DOC_WC, BATCH_SIZE, \
     MODEL_FMT_STR, MODEL_FILE_PATTERN, LATEST_MODEL_PATH, \
     LOG_DIR, LOG_FILE_PATH
-from .model import get_model_paths, build_network
+from model import get_model_paths, build_network
 
 
 class MyTensorBoard(keras.callbacks.TensorBoard):
@@ -15,6 +17,16 @@ class MyTensorBoard(keras.callbacks.TensorBoard):
         # log learning rate
         logs.update(lr = keras.backend.eval(self.model.optimizer.lr))
         super().on_epoch_end(epoch, logs)
+
+
+def sent2vec(sent, max_wc):
+    embedded = np.zeros(shape = (BATCH_SIZE, MAX_QUERY_WC, VEC_SIZE), dtype = np.float32)
+    for s in range(BATCH_SIZE):
+        word_list = cut_sentence(sentence = sent[s])
+        vec_list = get_vectors(word_list = word_list)
+        for i, vec in zip(range(max_wc), vec_list):
+            embedded[i] = vec
+    return embedded
 
 
 def train(epochs: int) -> None:
