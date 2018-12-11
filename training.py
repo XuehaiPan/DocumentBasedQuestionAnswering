@@ -39,8 +39,6 @@ def get_data(dataset: str) -> Tuple[List[np.ndarray], np.ndarray]:
         query_vectors.append(sent2vec(sentence = query, max_wc = MAX_QUERY_WC))
         doc_vectors.append(sent2vec(sentence = doc, max_wc = MAX_DOC_WC))
         labels.append(label)
-        if len(labels) >= 10:
-            break
     
     query_vectors: np.ndarray = np.array(query_vectors, dtype = np.float32)
     doc_vectors: np.ndarray = np.array(doc_vectors, dtype = np.float32)
