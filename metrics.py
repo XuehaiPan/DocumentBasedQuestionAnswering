@@ -1,6 +1,6 @@
 from typing import Set, Dict
-from .config import DATA_FILE_PATH
-from .dataset import query_doc_label_generator
+from config import DATA_FILE_PATH
+from dataset import query_doc_label_generator
 
 
 QUERY_NUM: Dict[str, int] = {}

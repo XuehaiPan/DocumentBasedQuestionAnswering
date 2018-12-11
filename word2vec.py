@@ -1,10 +1,30 @@
 from typing import List
 import numpy as np
 from gensim.models import Word2Vec, KeyedVectors
-from .config import WORD2VEC_MODEL_PATH, VEC_SIZE
+from gensim.models.callbacks import CallbackAny2Vec
+from config import WORD2VEC_MODEL_PATH, VEC_SIZE
 
 
 np.random.seed(seed = 0)
+
+
+class EpochLogger(CallbackAny2Vec):
+    """Callback to log information about training"""
+    
+    def __init__(self):
+        self.epoch = 0
+    
+    def on_train_begin(self, model):
+        print('Start training Word2Vec model')
+    
+    def on_epoch_begin(self, model):
+        self.epoch += 1
+        print(f'Epoch #{self.epoch} start')
+    
+    def on_epoch_end(self, model):
+        print(f'Epoch #{self.epoch} end')
+        print(f'Save model to {WORD2VEC_MODEL_PATH}')
+        model.save(WORD2VEC_MODEL_PATH)
 
 
 def get_word2vec_model() -> KeyedVectors:
@@ -13,27 +33,8 @@ def get_word2vec_model() -> KeyedVectors:
     except OSError:
         pass
     
-    from gensim.models.callbacks import CallbackAny2Vec
     from config import DATA_FILE_PATH, WORKERS
     from dataset import query_doc_label_generator, cut_sentence
-    
-    class EpochLogger(CallbackAny2Vec):
-        """Callback to log information about training"""
-        
-        def __init__(self):
-            self.epoch = 0
-        
-        def on_train_begin(self, model):
-            print('Start training Word2Vec model')
-        
-        def on_epoch_begin(self, model):
-            self.epoch += 1
-            print(f'Epoch #{self.epoch} start')
-        
-        def on_epoch_end(self, model):
-            print(f'Epoch #{self.epoch} end')
-            print(f'Save model to {WORD2VEC_MODEL_PATH}')
-            model.save(WORD2VEC_MODEL_PATH)
     
     sentences: List[List[str]] = []
     for dataset in DATA_FILE_PATH:
@@ -54,9 +55,9 @@ def get_word2vec_model() -> KeyedVectors:
 word2vec: KeyedVectors = get_word2vec_model()
 
 
-def get_vectors(words: List[str]) -> List[np.ndarray]:
+def get_vectors(word_list: List[str]) -> List[np.ndarray]:
     vec_list: List[np.ndarray] = []
-    for word in words:
+    for word in word_list:
         try:
             vec: np.ndarray = word2vec.get_vector(word = word)
         except KeyError:

@@ -1,27 +1,29 @@
 import os
 from typing import List, Tuple, Dict, Iterator
 from jieba import Tokenizer
-from .config import DATA_FILE_PATH, DICTIONARY_PATH, FIGURE_DIR
+from config import DATA_FILE_PATH, DICTIONARY_PATH, FIGURE_DIR
+
+
+def split_line(line: str) -> List[str]:
+    return list(map(str.strip, line.split('\t')))
+
+
+def data_tuple_generator(dataset: str) -> Tuple[str, str, int]:
+    with open(file = DATA_FILE_PATH[dataset], mode = 'r', encoding = 'UTF-8') as file:
+        file: Iterator[str] = filter(None, map(str.strip, file))
+        for i, line in enumerate(file, start = 1):
+            split: List[str] = split_line(line = line)
+            try:
+                query, doc, label = split
+                yield query, doc, int(label)
+            except ValueError:  # assert len(split) == 3
+                raise ValueError('Invalid data format.\n'
+                                 f'  File \"{DATA_FILE_PATH[dataset]}\", line {i}\n'
+                                 f'     original: \"{line}\"\n'
+                                 f'     split: {split}\n')
 
 
 def query_doc_label_generator(dataset: str) -> Tuple[str, List[str], List[int]]:
-    def split_line(line: str) -> List[str]:
-        return list(map(str.strip, line.split('\t')))
-    
-    def data_tuple_generator(dataset: str) -> Tuple[str, str, int]:
-        with open(file = DATA_FILE_PATH[dataset], mode = 'r', encoding = 'UTF-8') as file:
-            file: Iterator[str] = filter(None, map(str.strip, file))
-            for i, line in enumerate(file, start = 1):
-                split: List[str] = split_line(line = line)
-                try:
-                    query, doc, label = split
-                    yield query, doc, int(label)
-                except ValueError:  # assert len(split) == 3
-                    raise ValueError('Invalid data format.\n'
-                                     f'  File \"{DATA_FILE_PATH[dataset]}\", line {i}\n'
-                                     f'     original: \"{line}\"\n'
-                                     f'     split: {split}\n')
-    
     assert dataset in ('train', 'valid', 'validation', 'test')
     if 'valid' in dataset:  # add alias
         dataset = 'validation'
