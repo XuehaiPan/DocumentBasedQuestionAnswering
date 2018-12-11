@@ -9,6 +9,9 @@ def split_line(line: str) -> List[str]:
 
 
 def data_tuple_generator(dataset: str) -> Tuple[str, str, int]:
+    assert dataset in ('train', 'valid', 'validation', 'test')
+    if 'valid' in dataset:  # add alias
+        dataset = 'validation'
     with open(file = DATA_FILE_PATH[dataset], mode = 'r', encoding = 'UTF-8') as file:
         file: Iterator[str] = filter(None, map(str.strip, file))
         for i, line in enumerate(file, start = 1):
@@ -24,9 +27,6 @@ def data_tuple_generator(dataset: str) -> Tuple[str, str, int]:
 
 
 def query_doc_label_generator(dataset: str) -> Tuple[str, List[str], List[int]]:
-    assert dataset in ('train', 'valid', 'validation', 'test')
-    if 'valid' in dataset:  # add alias
-        dataset = 'validation'
     cur_query: str = None
     doc_list: List[str] = []
     label_list: List[int] = []

@@ -104,3 +104,4 @@ venv.bak/
 .mypy_cache/
 
 !evaltool/test.exe
+logs/events*

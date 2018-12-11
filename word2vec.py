@@ -24,7 +24,7 @@ class EpochLogger(CallbackAny2Vec):
     def on_epoch_end(self, model):
         print(f'Epoch #{self.epoch} end')
         print(f'Save model to {WORD2VEC_MODEL_PATH}')
-        model.save(WORD2VEC_MODEL_PATH)
+        model.wv.save(WORD2VEC_MODEL_PATH)
 
 
 def get_word2vec_model() -> KeyedVectors:
@@ -64,3 +64,11 @@ def get_vectors(word_list: List[str]) -> List[np.ndarray]:
             vec: np.ndarray = np.zeros(shape = VEC_SIZE, dtype = np.float32)
         vec_list.append(vec)
     return vec_list
+
+
+def main() -> None:
+    get_word2vec_model()
+
+
+if __name__ == '__main__':
+    main()

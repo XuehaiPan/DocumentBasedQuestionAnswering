@@ -1,7 +1,7 @@
-from typing import List
+from typing import List, Tuple
 import numpy as np
 from tensorflow import keras
-from dataset import query_doc_label_generator, cut_sentence
+from dataset import data_tuple_generator, cut_sentence
 from word2vec import get_vectors
 from config import VEC_SIZE, MAX_QUERY_WC, MAX_DOC_WC, BATCH_SIZE, \
     MODEL_FMT_STR, MODEL_FILE_PATTERN, LATEST_MODEL_PATH, \
@@ -15,25 +15,42 @@ class MyTensorBoard(keras.callbacks.TensorBoard):
     
     def on_epoch_end(self, epoch: int, logs: dict = None) -> None:
         # log learning rate
-        logs.update(lr = keras.backend.eval(self.model.optimizer.lr))
+        try:
+            logs.update(lr = keras.backend.eval(self.model.optimizer.lr))
+        except AttributeError:
+            pass
         super().on_epoch_end(epoch, logs)
 
 
-def sent2vec(sent, max_wc):
-    embedded = np.zeros(shape = (BATCH_SIZE, MAX_QUERY_WC, VEC_SIZE), dtype = np.float32)
-    for s in range(BATCH_SIZE):
-        word_list = cut_sentence(sentence = sent[s])
-        vec_list = get_vectors(word_list = word_list)
-        for i, vec in zip(range(max_wc), vec_list):
-            embedded[i] = vec
+def sent2vec(sentence: str, max_wc: int) -> np.ndarray:
+    embedded: np.ndarray = np.zeros(shape = (max_wc, VEC_SIZE), dtype = np.float32)
+    word_list: List[str] = cut_sentence(sentence = sentence)
+    vec_list: List[np.ndarray] = get_vectors(word_list = word_list)
+    for i, vec in zip(range(max_wc), vec_list):
+        embedded[i] = vec
     return embedded
 
 
+def get_data(dataset: str) -> Tuple[List[np.ndarray], np.ndarray]:
+    query_vectors: List[np.ndarray] = []
+    doc_vectors: List[np.ndarray] = []
+    labels: List[np.ndarray] = []
+    for query, doc, label in data_tuple_generator(dataset = dataset):
+        query_vectors.append(sent2vec(sentence = query, max_wc = MAX_QUERY_WC))
+        doc_vectors.append(sent2vec(sentence = doc, max_wc = MAX_DOC_WC))
+        labels.append(label)
+        if len(labels) >= 10:
+            break
+    
+    query_vectors: np.ndarray = np.array(query_vectors, dtype = np.float32)
+    doc_vectors: np.ndarray = np.array(doc_vectors, dtype = np.float32)
+    labels: np.ndarray = np.array(labels, dtype = np.float32)
+    return [query_vectors, doc_vectors], labels
+
+
 def train(epochs: int) -> None:
-    # TODO: get data
-    raise NotImplementedError
-    x_train, y_train = None, None
-    x_valid, y_valid = None, None
+    x_train, y_train = get_data(dataset = 'train')
+    x_valid, y_valid = get_data(dataset = 'validation')
     
     tensorBoard = MyTensorBoard(log_dir = LOG_DIR,
                                 histogram_freq = 0,
@@ -45,9 +62,11 @@ def train(epochs: int) -> None:
                                           append = True)
     checkpoint = keras.callbacks.ModelCheckpoint(filepath = MODEL_FMT_STR,
                                                  monitor = 'val_acc',
+                                                 save_weights_only = True,
                                                  verbose = 1)
     checkpointLatest = keras.callbacks.ModelCheckpoint(filepath = LATEST_MODEL_PATH,
                                                        monitor = 'val_acc',
+                                                       save_weights_only = True,
                                                        verbose = 1)
     terminateOnNaN = keras.callbacks.TerminateOnNaN()
     earlyStopping = keras.callbacks.EarlyStopping(monitor = 'val_loss',
@@ -63,6 +82,7 @@ def train(epochs: int) -> None:
         initial_model_path: str = LATEST_MODEL_PATH
     
     model: keras.Model = build_network(model_path = initial_model_path)
+    model.summary()
     
     try:
         print(f'initial_epoch = {initial_epoch}')
@@ -76,11 +96,11 @@ def train(epochs: int) -> None:
         pass
     finally:
         print(f'save current model to {LATEST_MODEL_PATH}')
-        model.save(filepath = LATEST_MODEL_PATH)
+        model.save_weights(filepath = LATEST_MODEL_PATH)
 
 
 def main() -> None:
-    train(epochs = 50)
+    train(epochs = 80)
 
 
 if __name__ == '__main__':

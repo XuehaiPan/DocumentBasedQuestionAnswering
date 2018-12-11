@@ -18,8 +18,8 @@ MAX_QUERY_WC: int = 40
 # maximum doc word count
 MAX_DOC_WC: int = 160
 
-# maximum bin count
-BIN_NUM: int = 160
+# number of bins
+BIN_NUM: int = 21
 
 # initial learning rate
 INITIAL_LR: float = 1E-3
