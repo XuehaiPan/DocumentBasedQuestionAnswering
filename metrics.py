@@ -1,13 +1,13 @@
 from typing import Set, Dict
-from config import DATA_FILE_PATH
-from dataset import quest_ans_label_generator
+from .config import DATA_FILE_PATH
+from .dataset import query_doc_label_generator
 
 
-QUESTION_NUM: Dict[str, int] = {}
+QUERY_NUM: Dict[str, int] = {}
 for dataset in DATA_FILE_PATH:
-    quest_set: Set[str] = set(map(lambda data_tuple: data_tuple[0],
-                                  quest_ans_label_generator(dataset = dataset)))
-    QUESTION_NUM[dataset] = len(quest_set)
+    query_set: Set[str] = set(map(lambda data_tuple: data_tuple[0],
+                                  query_doc_label_generator(dataset = dataset)))
+    QUERY_NUM[dataset] = len(query_set)
 
 
 def mean_average_precision():

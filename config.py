@@ -12,6 +12,12 @@ BATCH_SIZE: int = 64
 # word vector size
 VEC_SIZE: int = 128
 
+# maximum query word count
+MAX_QUERY_WC: int = 40
+
+# maximum doc word count
+MAX_DOC_WC: int = 160
+
 # initial learning rate
 INITIAL_LR: float = 1E-3
 
@@ -41,12 +47,14 @@ LOG_DIR: str = './logs/'
 for DIR in (FIGURE_DIR, MODEL_DIR, LOG_DIR):
     os.makedirs(DIR, exist_ok = True)
 
+del DIR
+
 DICTIONARY_PATH: str = os.path.join(MODEL_DIR, 'dictionary.txt')
 WORD2VEC_MODEL_PATH: str = os.path.join(MODEL_DIR, 'word2vec.model')
 LATEST_MODEL_PATH: str = os.path.join(MODEL_DIR, 'latest.h5')
 LOG_FILE_PATH: str = os.path.join(LOG_DIR, 'log.csv')
 
-MODEL_FILE_PATTERN: Pattern = re.compile(
-        r'.*epoch(?P<epoch>\d*)_acc(?P<val_acc>[\d.]*)\.h5')
-MODEL_FMT_STR: str = os.path.join(
-        MODEL_DIR, 'epoch{epoch:02d}_acc{val_acc:.4f}.h5')
+MODEL_FILE_PATTERN: Pattern = re.compile(r'.*epoch(?P<epoch>\d*)_acc(?P<val_acc>[\d.]*)\.h5')
+MODEL_FMT_STR: str = os.path.join(MODEL_DIR, 'epoch{epoch:02d}_acc{val_acc:.4f}.h5')
+
+del os, re, Dict, Pattern

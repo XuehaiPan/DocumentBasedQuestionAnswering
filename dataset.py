@@ -1,10 +1,10 @@
 import os
-from typing import List, Tuple, Set, Dict, Iterator
+from typing import List, Tuple, Dict, Iterator
 from jieba import Tokenizer
-from config import DATA_FILE_PATH, DICTIONARY_PATH, FIGURE_DIR
+from .config import DATA_FILE_PATH, DICTIONARY_PATH, FIGURE_DIR
 
 
-def quest_ans_label_generator(dataset: str) -> Tuple[str, List[str], List[int]]:
+def query_doc_label_generator(dataset: str) -> Tuple[str, List[str], List[int]]:
     def split_line(line: str) -> List[str]:
         return list(map(str.strip, line.split('\t')))
     
@@ -14,8 +14,8 @@ def quest_ans_label_generator(dataset: str) -> Tuple[str, List[str], List[int]]:
             for i, line in enumerate(file, start = 1):
                 split: List[str] = split_line(line = line)
                 try:
-                    quest, ans, label = split
-                    yield quest, ans, int(label)
+                    query, doc, label = split
+                    yield query, doc, int(label)
                 except ValueError:  # assert len(split) == 3
                     raise ValueError('Invalid data format.\n'
                                      f'  File \"{DATA_FILE_PATH[dataset]}\", line {i}\n'
@@ -25,21 +25,21 @@ def quest_ans_label_generator(dataset: str) -> Tuple[str, List[str], List[int]]:
     assert dataset in ('train', 'valid', 'validation', 'test')
     if 'valid' in dataset:  # add alias
         dataset = 'validation'
-    cur_quest: str = None
-    ans_list: List[str] = []
+    cur_query: str = None
+    doc_list: List[str] = []
     label_list: List[int] = []
-    for quest, ans, label in data_tuple_generator(dataset = dataset):
-        if quest == cur_quest:
-            ans_list.append(ans)
+    for query, doc, label in data_tuple_generator(dataset = dataset):
+        if query == cur_query:
+            doc_list.append(doc)
             label_list.append(label)
         else:
-            if cur_quest is not None:
-                yield cur_quest, ans_list, label_list
-            cur_quest = quest
-            ans_list = []
+            if cur_query is not None:
+                yield cur_query, doc_list, label_list
+            cur_query = query
+            doc_list = []
             label_list = []
-    if cur_quest is not None:
-        yield cur_quest, ans_list, label_list
+    if cur_query is not None:
+        yield cur_query, doc_list, label_list
 
 
 # tokenizer to cut sentence
@@ -69,61 +69,62 @@ def draw_data_distribution() -> None:
     import matplotlib.pyplot as plt
     import seaborn as sns
     
+    color = plt.rcParamsDefault['axes.prop_cycle']
+    color = iter(map(lambda c: c['color'], color))
+    
     def get_seq_len(dataset: str) -> Tuple[np.ndarray, np.ndarray]:
-        quest_seq_len: List[int] = []
-        ans_seq_len: List[int] = []
-        quest_set: Set[str] = set()
-        longest_quest = ''
-        max_quest_len = 0
-        longest_ans = ''
-        longest_ans_quest = ''
-        max_ans_len = 0
-        for quest, ans_list, _ in quest_ans_label_generator(dataset = dataset):
-            quest_len = len(cut_sentence(sentence = quest))
-            quest_seq_len.append(quest_len)
-            if quest_len > max_quest_len:
-                longest_quest, max_quest_len = quest, quest_len
-                quest_set.add(quest)
-            for ans in ans_list:
-                ans_len = len(cut_sentence(sentence = ans))
-                ans_seq_len.append(ans_len)
-                if ans_len > max_ans_len:
-                    longest_ans, longest_ans_quest, max_ans_len = ans, quest, ans_len
+        query_seq_len: List[int] = []
+        doc_seq_len: List[int] = []
+        longest_query = ''
+        max_query_len = 0
+        longest_doc = ''
+        longest_doc_query = ''
+        max_doc_len = 0
+        for query, doc_list, _ in query_doc_label_generator(dataset = dataset):
+            query_len = len(cut_sentence(sentence = query))
+            query_seq_len.append(query_len)
+            if query_len > max_query_len:
+                longest_query, max_query_len = query, query_len
+            for doc in doc_list:
+                doc_len = len(cut_sentence(sentence = doc))
+                doc_seq_len.append(doc_len)
+                if doc_len > max_doc_len:
+                    longest_doc, longest_doc_query, max_doc_len = doc, query, doc_len
         print(f'{{\n'
               f'    dataset: {dataset}\n'
               f'    \n'
-              f'    longest_question: \'{longest_quest}\',\n'
-              f'    cut_longest_question: {cut_sentence(sentence = longest_quest)}\n'
-              f'    max_question_word_count: {max_quest_len}\n'
+              f'    longest_query: \'{longest_query}\',\n'
+              f'    cut_longest_query: {cut_sentence(sentence = longest_query)}\n'
+              f'    max_query_word_count: {max_query_len}\n'
               f'    \n'
-              f'    longest_answer: \'{longest_ans}\',\n'
-              f'    cut_longest_answer: {cut_sentence(sentence = longest_ans)}\n'
-              f'    question_of_longest_answer: \'{longest_ans_quest}\',\n'
-              f'    max_answer_word_count: {max_ans_len}\n'
+              f'    longest_doc: \'{longest_doc}\',\n'
+              f'    cut_longest_doc: {cut_sentence(sentence = longest_doc)}\n'
+              f'    query_of_longest_doc: \'{longest_doc_query}\',\n'
+              f'    max_doc_word_count: {max_doc_len}\n'
               f'}}\n')
-        return np.array(quest_seq_len, dtype = np.int32), np.array(ans_seq_len, dtype = np.int32)
+        return np.array(query_seq_len, dtype = np.int32), np.array(doc_seq_len, dtype = np.int32)
     
     def plot_dist(dataset: str,
-                  quest_seq_len: np.ndarray, ans_seq_len: np.ndarray,
-                  quest_ax: plt.Axes, ans_ax: plt.Axes) -> None:
-        max_ans_len: int = 160
-        assert np.quantile(ans_seq_len, q = 0.99) <= max_ans_len
-        sns.distplot(quest_seq_len, bins = quest_seq_len.max(), color = next(color),
+                  query_seq_len: np.ndarray, doc_seq_len: np.ndarray,
+                  query_ax: plt.Axes, doc_ax: plt.Axes) -> None:
+        max_doc_len: int = 160
+        assert np.quantile(doc_seq_len, q = 0.99) <= max_doc_len
+        sns.distplot(query_seq_len, bins = query_seq_len.max(), color = next(color),
                      kde = True, kde_kws = {'label': 'kernel density estimation'},
-                     label = 'data', ax = quest_ax)
-        sns.distplot(ans_seq_len[ans_seq_len <= max_ans_len], color = next(color),
+                     label = 'data', ax = query_ax)
+        sns.distplot(doc_seq_len[doc_seq_len <= max_doc_len], color = next(color),
                      kde = True, kde_kws = {'label': 'kernel density estimation'},
-                     label = 'data', ax = ans_ax)
+                     label = 'data', ax = doc_ax)
         for q in (0.25, 0.50, 0.75):
-            quest_ax.axvline(x = np.quantile(quest_seq_len, q = q),
+            query_ax.axvline(x = np.quantile(query_seq_len, q = q),
                              linestyle = '-.', color = 'black', alpha = 0.5)
-            ans_ax.axvline(x = np.quantile(ans_seq_len, q = q),
+            doc_ax.axvline(x = np.quantile(doc_seq_len, q = q),
                            linestyle = '-.', color = 'black', alpha = 0.5)
-        quest_ax.set_xlim(left = 0)
-        ans_ax.set_xlim(left = 0, right = max_ans_len)
-        quest_ax.set_title(label = f'Question Length ({dataset})')
-        ans_ax.set_title(label = f'Answer Length ({dataset})')
-        for ax in (quest_ax, ans_ax):
+        query_ax.set_xlim(left = 0)
+        doc_ax.set_xlim(left = 0, right = max_doc_len)
+        query_ax.set_title(label = f'Query Length ({dataset})')
+        doc_ax.set_title(label = f'Doc Length ({dataset})')
+        for ax in (query_ax, doc_ax):
             ax.set_xlabel(xlabel = 'Word Count')
             ax.set_ylabel(ylabel = 'Relative Frequency')
             ax.legend()
@@ -131,26 +132,23 @@ def draw_data_distribution() -> None:
     fig: plt.Figure
     axes: Dict[Tuple[int, int], plt.Axes]
     fig, axes = plt.subplots(nrows = 3, ncols = 2, figsize = (12, 18), dpi = 250)
-    train_quest_seq_len, train_ans_seq_len = get_seq_len(dataset = 'train')
-    valid_quest_seq_len, valid_ans_seq_len = get_seq_len(dataset = 'validation')
-    
-    color = plt.rcParamsDefault['axes.prop_cycle']
-    color = iter(map(lambda c: c['color'], color))
+    train_query_seq_len, train_doc_seq_len = get_seq_len(dataset = 'train')
+    valid_query_seq_len, valid_doc_seq_len = get_seq_len(dataset = 'validation')
     
     plot_dist(dataset = 'train',
-              quest_seq_len = train_quest_seq_len, ans_seq_len = train_ans_seq_len,
-              quest_ax = axes[0, 0], ans_ax = axes[0, 1])
+              query_seq_len = train_query_seq_len, doc_seq_len = train_doc_seq_len,
+              query_ax = axes[0, 0], doc_ax = axes[0, 1])
     
     plot_dist(dataset = 'validation',
-              quest_seq_len = valid_quest_seq_len, ans_seq_len = valid_ans_seq_len,
-              quest_ax = axes[1, 0], ans_ax = axes[1, 1])
+              query_seq_len = valid_query_seq_len, doc_seq_len = valid_doc_seq_len,
+              query_ax = axes[1, 0], doc_ax = axes[1, 1])
     
-    all_quest_seq_len: np.ndarray = np.concatenate([train_quest_seq_len, valid_quest_seq_len])
-    all_ans_seq_len: np.ndarray = np.concatenate([train_ans_seq_len, valid_ans_seq_len])
+    all_query_seq_len: np.ndarray = np.concatenate([train_query_seq_len, valid_query_seq_len])
+    all_doc_seq_len: np.ndarray = np.concatenate([train_doc_seq_len, valid_doc_seq_len])
     
     plot_dist(dataset = 'all',
-              quest_seq_len = all_quest_seq_len, ans_seq_len = all_ans_seq_len,
-              quest_ax = axes[2, 0], ans_ax = axes[2, 1])
+              query_seq_len = all_query_seq_len, doc_seq_len = all_doc_seq_len,
+              query_ax = axes[2, 0], doc_ax = axes[2, 1])
     
     fig.tight_layout()
     fig.savefig(fname = os.path.join(FIGURE_DIR, 'data_dist.png'))
