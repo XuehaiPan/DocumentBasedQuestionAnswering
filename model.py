@@ -105,12 +105,17 @@ def build_network(model_path: str = None) -> keras.Model:
 
 def main() -> None:
     model: keras.Model = build_network()
+    
     model.summary()
-    keras.utils.plot_model(model = model,
-                           to_file = os.path.join(FIGURE_DIR, 'model.png'),
-                           show_shapes = True,
-                           show_layer_names = True,
-                           rankdir = 'TB')
+    
+    try:
+        keras.utils.plot_model(model = model,
+                               to_file = os.path.join(FIGURE_DIR, 'model.png'),
+                               show_shapes = True,
+                               show_layer_names = True,
+                               rankdir = 'TB')
+    except ImportError:
+        pass
 
 
 if __name__ == '__main__':
