@@ -49,7 +49,7 @@ def get_word2vec_model() -> KeyedVectors:
     
     model.wv.save(WORD2VEC_MODEL_PATH)
     
-    return KeyedVectors.load(WORD2VEC_MODEL_PATH)
+    return model.wv
 
 
 word2vec: KeyedVectors = get_word2vec_model()

@@ -1,9 +1,8 @@
 from typing import List, Tuple
 import numpy as np
 from tensorflow import keras
-from dataset import data_tuple_generator, cut_sentence
-from word2vec import get_vectors
-from config import VEC_SIZE, MAX_QUERY_WC, MAX_DOC_WC, BATCH_SIZE, \
+from dataset import get_all_data, DataSequence
+from config import BATCH_SIZE, WORKERS, \
     MODEL_FMT_STR, MODEL_FILE_PATTERN, LATEST_MODEL_PATH, \
     LOG_DIR, LOG_FILE_PATH
 from model import get_model_paths, build_network
@@ -22,33 +21,10 @@ class MyTensorBoard(keras.callbacks.TensorBoard):
         super().on_epoch_end(epoch, logs)
 
 
-def sent2vec(sentence: str, max_wc: int) -> np.ndarray:
-    embedded: np.ndarray = np.zeros(shape = (max_wc, VEC_SIZE), dtype = np.float32)
-    word_list: List[str] = cut_sentence(sentence = sentence)
-    vec_list: List[np.ndarray] = get_vectors(word_list = word_list)
-    for i, vec in zip(range(max_wc), vec_list):
-        embedded[i] = vec
-    return embedded
-
-
-def get_data(dataset: str) -> Tuple[List[np.ndarray], np.ndarray]:
-    query_vectors: List[np.ndarray] = []
-    doc_vectors: List[np.ndarray] = []
-    labels: List[np.ndarray] = []
-    for query, doc, label in data_tuple_generator(dataset = dataset):
-        query_vectors.append(sent2vec(sentence = query, max_wc = MAX_QUERY_WC))
-        doc_vectors.append(sent2vec(sentence = doc, max_wc = MAX_DOC_WC))
-        labels.append(label)
-    
-    query_vectors: np.ndarray = np.array(query_vectors, dtype = np.float32)
-    doc_vectors: np.ndarray = np.array(doc_vectors, dtype = np.float32)
-    labels: np.ndarray = np.array(labels, dtype = np.float32)
-    return [query_vectors, doc_vectors], labels
-
-
 def train(epochs: int) -> None:
-    x_train, y_train = get_data(dataset = 'train')
-    x_valid, y_valid = get_data(dataset = 'validation')
+    data_train = DataSequence(dataset = 'train', batch_size = BATCH_SIZE)
+    # x_train, y_train = get_all_data(dataset = 'train')
+    x_valid, y_valid = get_all_data(dataset = 'validation')
     
     tensorBoard = MyTensorBoard(log_dir = LOG_DIR,
                                 histogram_freq = 0,
@@ -85,11 +61,11 @@ def train(epochs: int) -> None:
     try:
         print(f'initial_epoch = {initial_epoch}')
         print(f'initial_model_path = {initial_model_path}')
-        model.fit(x = x_train, y = y_train,
+        model.fit(x = data_train, y = None,
                   batch_size = BATCH_SIZE, epochs = epochs, initial_epoch = initial_epoch,
                   validation_data = (x_valid, y_valid), shuffle = True,
                   callbacks = [tensorBoard, csvLogger, checkpoint, checkpointLatest, terminateOnNaN, earlyStopping],
-                  workers = 4, use_multiprocessing = True)
+                  workers = WORKERS)
     except KeyboardInterrupt:
         pass
     finally:

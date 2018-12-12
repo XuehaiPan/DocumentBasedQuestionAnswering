@@ -6,7 +6,7 @@ import tensorflow as tf
 from tensorflow import keras
 from config import VEC_SIZE, MAX_QUERY_WC, MAX_DOC_WC, BIN_NUM, \
     INITIAL_LR, INITIAL_DECAY, REGULARIZATION_PARAM, \
-    MODEL_DIR, LATEST_MODEL_PATH, MODEL_FILE_PATTERN
+    MODEL_DIR, LATEST_MODEL_PATH, MODEL_FILE_PATTERN, FIGURE_DIR
 
 
 tf.enable_eager_execution()
@@ -34,16 +34,16 @@ def build_network(model_path: str = None) -> keras.Model:
     qa_matrix = Dot_1([embedded_query, embedded_doc])  # shape == [BATCH_SIZE, MAX_QUERY_WC, MAX_DOC_WC]
     
     # Input Layer to Hidden Layer
-    def cal_bin_sum(input):
+    def cal_bin_sum(input: tf.Tensor) -> tf.Tensor:
         n_sample: int = input.shape[0]
         output: np.ndarray = np.zeros(shape = (n_sample, MAX_QUERY_WC, BIN_NUM))
+        indexes: tf.Tensor = (input + 1) * (BIN_NUM - 1) / 2
+        indexes = keras.backend.cast(indexes, dtype = tf.int32)
         for s in range(n_sample):
             for i in range(MAX_QUERY_WC):
                 for j in range(MAX_DOC_WC):
-                    val: float = input[s, i, j]
-                    k: float = (val + 1) * (BIN_NUM - 1) / 2
-                    k: int = keras.backend.cast(k, dtype = tf.int32)
-                    output[s, i, k] += val
+                    k: int = indexes[s, i, j]
+                    output[s, i, k] += input[s, i, j]
         return keras.backend.variable(output)
     
     CalBinSum_2 = keras.layers.Lambda(function = cal_bin_sum, output_shape = (MAX_QUERY_WC, BIN_NUM),
@@ -106,6 +106,11 @@ def build_network(model_path: str = None) -> keras.Model:
 def main() -> None:
     model: keras.Model = build_network()
     model.summary()
+    keras.utils.plot_model(model = model,
+                           to_file = os.path.join(FIGURE_DIR, 'model.png'),
+                           show_shapes = True,
+                           show_layer_names = True,
+                           rankdir = 'TB')
 
 
 if __name__ == '__main__':

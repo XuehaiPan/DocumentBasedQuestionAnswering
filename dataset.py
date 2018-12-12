@@ -1,7 +1,10 @@
 import os
 from typing import List, Tuple, Dict, Iterator
+import numpy as np
+from tensorflow import keras
 from jieba import Tokenizer
-from config import DATA_FILE_PATH, DICTIONARY_PATH, FIGURE_DIR
+from config import VEC_SIZE, MAX_QUERY_WC, MAX_DOC_WC, \
+    DATA_FILE_PATH, DICTIONARY_PATH, FIGURE_DIR
 
 
 def split_line(line: str) -> List[str]:
@@ -49,7 +52,6 @@ tokenizer: Tokenizer = Tokenizer(dictionary = None)
 
 if not os.path.exists(DICTIONARY_PATH):
     from shutil import copyfile
-    
     
     # copy default dictionary
     tokenizer.initialize(dictionary = None)
@@ -155,6 +157,67 @@ def draw_data_distribution() -> None:
     fig.tight_layout()
     fig.savefig(fname = os.path.join(FIGURE_DIR, 'data_dist.png'))
     fig.show()
+
+
+from word2vec import get_vectors
+
+
+def sent2vec(word_list: List[str], max_wc: int) -> np.ndarray:
+    embedded_vec: np.ndarray = np.zeros(shape = (max_wc, VEC_SIZE), dtype = np.float32)
+    vec_list: List[np.ndarray] = get_vectors(word_list = word_list)
+    for i, vec in zip(range(max_wc), vec_list):
+        embedded_vec[i] = vec
+    return embedded_vec
+
+
+def get_all_data(dataset: str) -> Tuple[List[np.ndarray], np.ndarray]:
+    query_vectors: List[np.ndarray] = []
+    doc_vectors: List[np.ndarray] = []
+    labels: List[np.ndarray] = []
+    for query, doc, label in data_tuple_generator(dataset = dataset):
+        split_query: List[str] = cut_sentence(sentence = query)
+        split_doc: List[str] = cut_sentence(sentence = doc)
+        query_vectors.append(sent2vec(word_list = split_query, max_wc = MAX_QUERY_WC))
+        doc_vectors.append(sent2vec(word_list = split_doc, max_wc = MAX_DOC_WC))
+        labels.append(label)
+    
+    query_vectors: np.ndarray = np.array(query_vectors, dtype = np.float32)
+    doc_vectors: np.ndarray = np.array(doc_vectors, dtype = np.float32)
+    labels: np.ndarray = np.array(labels, dtype = np.float32)
+    return [query_vectors, doc_vectors], labels
+
+
+class DataSequence(keras.utils.Sequence):
+    def __init__(self, dataset: str, batch_size: int) -> None:
+        """ Initialize self. """
+        super(DataSequence, self).__init__()
+        self.dataset: str = dataset
+        self.batch_size: int = batch_size
+        self.queries: List[List[str]] = []
+        self.docs: List[List[str]] = []
+        self.labels: List[int] = []
+        for query, doc_list, label_list in query_doc_label_generator(dataset = dataset):
+            self.queries += [cut_sentence(sentence = query)] * len(label_list)
+            self.docs.extend(map(cut_sentence, doc_list))
+            self.labels.extend(label_list)
+    
+    def __getitem__(self, index: int) -> Tuple[List[np.ndarray], np.ndarray]:
+        queries: List[List[str]] = self.queries[index * self.batch_size:(index + 1) * self.batch_size]
+        docs: List[List[str]] = self.docs[index * self.batch_size:(index + 1) * self.batch_size]
+        labels: List[int] = self.labels[index * self.batch_size:(index + 1) * self.batch_size]
+        
+        embedded_queries: List[np.ndarray] = list(map(lambda query: sent2vec(word_list = query, max_wc = MAX_QUERY_WC),
+                                                      queries))
+        embedded_docs: List[np.ndarray] = list(map(lambda doc: sent2vec(word_list = doc, max_wc = MAX_DOC_WC),
+                                                   docs))
+        
+        embedded_queries: np.ndarray = np.array(embedded_queries, dtype = np.float32)
+        embedded_docs: np.ndarray = np.array(embedded_docs, dtype = np.float32)
+        labels: np.ndarray = np.array(labels, dtype = np.float32)
+        return [embedded_queries, embedded_docs], labels
+    
+    def __len__(self) -> int:
+        return int(np.ceil(len(self.labels) / float(self.batch_size)))
 
 
 def main() -> None:

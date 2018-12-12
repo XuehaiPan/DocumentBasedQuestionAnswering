@@ -31,7 +31,12 @@ INITIAL_DECAY: float = 1E-4
 REGULARIZATION_PARAM: float = 1E-2
 
 # workers
-WORKERS: int = 4
+import multiprocessing
+
+WORKERS: int = multiprocessing.cpu_count()
+WORKERS = max(1, int(0.75 * WORKERS))
+
+del multiprocessing
 
 # labels
 POSITIVE: int = 1
