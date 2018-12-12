@@ -56,7 +56,6 @@ def train(epochs: int) -> None:
         initial_model_path: str = LATEST_MODEL_PATH
     
     model: keras.Model = build_network(model_path = initial_model_path)
-    model.summary()
     
     try:
         print(f'initial_epoch = {initial_epoch}')
@@ -65,7 +64,7 @@ def train(epochs: int) -> None:
                             epochs = epochs, initial_epoch = initial_epoch,
                             validation_data = validation_data, shuffle = True,
                             callbacks = [tensorBoard, csvLogger, checkpoint, checkpointLatest, terminateOnNaN, earlyStopping],
-                            workers = WORKERS, use_multiprocessing = True)
+                            workers = WORKERS)
     except KeyboardInterrupt:
         pass
     finally:
