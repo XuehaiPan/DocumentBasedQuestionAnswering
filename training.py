@@ -1,5 +1,4 @@
-from typing import List, Tuple
-import numpy as np
+from typing import List
 from tensorflow import keras
 from dataset import get_all_data, DataSequence
 from config import BATCH_SIZE, WORKERS, \
