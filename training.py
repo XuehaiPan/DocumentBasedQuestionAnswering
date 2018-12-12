@@ -61,11 +61,11 @@ def train(epochs: int) -> None:
     try:
         print(f'initial_epoch = {initial_epoch}')
         print(f'initial_model_path = {initial_model_path}')
-        model.fit(x = train_data, y = None,
-                  batch_size = BATCH_SIZE, epochs = epochs, initial_epoch = initial_epoch,
-                  validation_data = validation_data, shuffle = True,
-                  callbacks = [tensorBoard, csvLogger, checkpoint, checkpointLatest, terminateOnNaN, earlyStopping],
-                  workers = WORKERS)
+        model.fit_generator(generator = train_data,
+                            epochs = epochs, initial_epoch = initial_epoch,
+                            validation_data = validation_data, shuffle = True,
+                            callbacks = [tensorBoard, csvLogger, checkpoint, checkpointLatest, terminateOnNaN, earlyStopping],
+                            workers = WORKERS, use_multiprocessing = True)
     except KeyboardInterrupt:
         pass
     finally:
