@@ -21,9 +21,10 @@ class MyTensorBoard(keras.callbacks.TensorBoard):
 
 
 def train(epochs: int) -> None:
-    data_train = DataSequence(dataset = 'train', batch_size = BATCH_SIZE)
+    train_data = DataSequence(dataset = 'train', batch_size = BATCH_SIZE)
+    validation_data = DataSequence(dataset = 'validation', batch_size = BATCH_SIZE)
     # x_train, y_train = get_all_data(dataset = 'train')
-    x_valid, y_valid = get_all_data(dataset = 'validation')
+    # x_valid, y_valid = get_all_data(dataset = 'validation')
     
     tensorBoard = MyTensorBoard(log_dir = LOG_DIR,
                                 histogram_freq = 0,
@@ -60,9 +61,9 @@ def train(epochs: int) -> None:
     try:
         print(f'initial_epoch = {initial_epoch}')
         print(f'initial_model_path = {initial_model_path}')
-        model.fit(x = data_train, y = None,
+        model.fit(x = train_data, y = None,
                   batch_size = BATCH_SIZE, epochs = epochs, initial_epoch = initial_epoch,
-                  validation_data = (x_valid, y_valid), shuffle = True,
+                  validation_data = validation_data, shuffle = True,
                   callbacks = [tensorBoard, csvLogger, checkpoint, checkpointLatest, terminateOnNaN, earlyStopping],
                   workers = WORKERS)
     except KeyboardInterrupt:

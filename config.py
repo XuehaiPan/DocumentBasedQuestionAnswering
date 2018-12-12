@@ -1,5 +1,6 @@
 import os
 import re
+from multiprocessing import cpu_count
 from typing import Dict, Pattern
 
 
@@ -31,12 +32,8 @@ INITIAL_DECAY: float = 1E-4
 REGULARIZATION_PARAM: float = 1E-2
 
 # workers
-import multiprocessing
-
-WORKERS: int = multiprocessing.cpu_count()
+WORKERS: int = cpu_count()
 WORKERS = max(1, int(0.75 * WORKERS))
-
-del multiprocessing
 
 # labels
 POSITIVE: int = 1
@@ -68,4 +65,4 @@ LOG_FILE_PATH: str = os.path.join(LOG_DIR, 'log.csv')
 MODEL_FILE_PATTERN: Pattern = re.compile(r'.*epoch(?P<epoch>\d*)_acc(?P<val_acc>[\d.]*)\.h5')
 MODEL_FMT_STR: str = os.path.join(MODEL_DIR, 'epoch{epoch:02d}_acc{val_acc:.4f}.h5')
 
-del os, re, Dict, Pattern
+del os, re, cpu_count, Dict, Pattern
