@@ -123,6 +123,7 @@ class DataSequence(keras.utils.Sequence):
                         val: float = qa_matrix[i, j]
                         k: int = int((val + 1) * (BIN_NUM - 1) / 2)
                         bin_sum[s, i, k] = qa_matrix[i, j]
+                labels[s] = label
                 s += 1
         
         return [embedded_queries, bin_sum], labels
