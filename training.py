@@ -34,11 +34,9 @@ def train(epochs: int) -> None:
                                           append = True)
     checkpoint = keras.callbacks.ModelCheckpoint(filepath = MODEL_FMT_STR,
                                                  monitor = 'val_acc',
-                                                 save_weights_only = True,
                                                  verbose = 1)
     checkpointLatest = keras.callbacks.ModelCheckpoint(filepath = LATEST_MODEL_PATH,
                                                        monitor = 'val_acc',
-                                                       save_weights_only = True,
                                                        verbose = 1)
     terminateOnNaN = keras.callbacks.TerminateOnNaN()
     earlyStopping = keras.callbacks.EarlyStopping(monitor = 'val_loss',
