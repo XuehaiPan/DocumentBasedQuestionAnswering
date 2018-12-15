@@ -3,7 +3,7 @@ from typing import List, Tuple, Dict, Iterator
 import numpy as np
 from tensorflow import keras
 from jieba import Tokenizer
-from config import VEC_SIZE, MAX_QUERY_WC, MAX_DOC_WC, \
+from config import VEC_SIZE, MAX_QUERY_WC, MAX_DOC_WC, BIN_NUM, \
     DATA_FILE_PATH, DICTIONARY_PATH, FIGURE_DIR
 
 
@@ -162,29 +162,20 @@ def draw_data_distribution() -> None:
 from word2vec import get_vectors
 
 
-def sent2vec(word_list: List[str], max_wc: int) -> np.ndarray:
-    embedded_vec: np.ndarray = np.zeros(shape = (max_wc, VEC_SIZE), dtype = np.float32)
+def get_normalized_vectors(word_list: List[str], epsilon: float = 1E-12) -> List[np.ndarray]:
     vec_list: List[np.ndarray] = get_vectors(word_list = word_list)
+    for i, vec in enumerate(vec_list):
+        norm: float = max(np.linalg.norm(vec), epsilon)
+        vec_list[i] = vec / norm
+    return vec_list
+
+
+def sent2vec(word_list: List[str], max_wc: int) -> np.ndarray:
+    embedded_sent: np.ndarray = np.zeros(shape = (max_wc, VEC_SIZE), dtype = np.float32)
+    vec_list: List[np.ndarray] = get_normalized_vectors(word_list = word_list)
     for i, vec in zip(range(max_wc), vec_list):
-        embedded_vec[i] = vec
-    return embedded_vec
-
-
-def get_all_data(dataset: str) -> Tuple[List[np.ndarray], np.ndarray]:
-    query_vectors: List[np.ndarray] = []
-    doc_vectors: List[np.ndarray] = []
-    labels: List[np.ndarray] = []
-    for query, doc, label in data_tuple_generator(dataset = dataset):
-        split_query: List[str] = cut_sentence(sentence = query)
-        split_doc: List[str] = cut_sentence(sentence = doc)
-        query_vectors.append(sent2vec(word_list = split_query, max_wc = MAX_QUERY_WC))
-        doc_vectors.append(sent2vec(word_list = split_doc, max_wc = MAX_DOC_WC))
-        labels.append(label)
-    
-    query_vectors: np.ndarray = np.array(query_vectors, dtype = np.float32)
-    doc_vectors: np.ndarray = np.array(doc_vectors, dtype = np.float32)
-    labels: np.ndarray = np.array(labels, dtype = np.float32)
-    return [query_vectors, doc_vectors], labels
+        embedded_sent[i] = vec
+    return embedded_sent
 
 
 class DataSequence(keras.utils.Sequence):
@@ -194,30 +185,40 @@ class DataSequence(keras.utils.Sequence):
         self.dataset: str = dataset
         self.batch_size: int = batch_size
         self.queries: List[List[str]] = []
-        self.docs: List[List[str]] = []
-        self.labels: List[int] = []
+        self.doc_lists: List[List[List[str]]] = []
+        self.label_lists: List[List[int]] = []
         for query, doc_list, label_list in query_doc_label_generator(dataset = dataset):
-            self.queries += [cut_sentence(sentence = query)] * len(label_list)
-            self.docs.extend(map(cut_sentence, doc_list))
-            self.labels.extend(label_list)
+            self.queries.append(cut_sentence(sentence = query))
+            self.doc_lists.append(list(map(cut_sentence, doc_list)))
+            self.label_lists.append(label_list)
     
     def __getitem__(self, index: int) -> Tuple[List[np.ndarray], np.ndarray]:
         queries: List[List[str]] = self.queries[index * self.batch_size:(index + 1) * self.batch_size]
-        docs: List[List[str]] = self.docs[index * self.batch_size:(index + 1) * self.batch_size]
-        labels: List[int] = self.labels[index * self.batch_size:(index + 1) * self.batch_size]
+        doc_lists: List[List[List[str]]] = self.doc_lists[index * self.batch_size:(index + 1) * self.batch_size]
+        label_lists: List[List[int]] = self.label_lists[index * self.batch_size:(index + 1) * self.batch_size]
         
-        embedded_queries: List[np.ndarray] = list(map(lambda query: sent2vec(word_list = query, max_wc = MAX_QUERY_WC),
-                                                      queries))
-        embedded_docs: List[np.ndarray] = list(map(lambda doc: sent2vec(word_list = doc, max_wc = MAX_DOC_WC),
-                                                   docs))
+        n_sample: int = sum(map(len, label_lists))
+        embedded_queries: np.ndarray = np.zeros(shape = (n_sample, MAX_QUERY_WC, VEC_SIZE), dtype = np.float32)
+        bin_sum: np.ndarray = np.zeros(shape = (n_sample, MAX_QUERY_WC, BIN_NUM), dtype = np.float32)
+        labels: np.ndarray = np.zeros(shape = (n_sample,), dtype = np.float32)
         
-        embedded_queries: np.ndarray = np.array(embedded_queries, dtype = np.float32)
-        embedded_docs: np.ndarray = np.array(embedded_docs, dtype = np.float32)
-        labels: np.ndarray = np.array(labels, dtype = np.float32)
-        return [embedded_queries, embedded_docs], labels
+        s = 0
+        for query, doc_list, label_list in zip(queries, doc_lists, label_lists):
+            embedded_query: List[np.ndarray] = sent2vec(word_list = query, max_wc = MAX_QUERY_WC)
+            for doc, label in zip(doc_list, label_list):
+                embedded_doc: np.ndarray = sent2vec(word_list = doc, max_wc = MAX_DOC_WC)
+                qa_matrix = np.tensordot(embedded_query, embedded_doc, axes = (-1, -1))
+                for i in range(MAX_QUERY_WC):
+                    for j in range(MAX_DOC_WC):
+                        val: float = qa_matrix[i, j]
+                        k: int = int((val + 1) * (BIN_NUM - 1) / 2)
+                        bin_sum[s, i, k] = qa_matrix[i, j]
+                s += 1
+        
+        return [embedded_queries, bin_sum], labels
     
     def __len__(self) -> int:
-        return int(np.ceil(len(self.labels) / float(self.batch_size)))
+        return int(np.ceil(len(self.label_lists) / float(self.batch_size)))
 
 
 def main() -> None:

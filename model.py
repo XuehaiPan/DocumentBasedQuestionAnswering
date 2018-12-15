@@ -1,15 +1,12 @@
 import os
 from typing import List
 from glob import glob
-import numpy as np
 import tensorflow as tf
 from tensorflow import keras
-from config import VEC_SIZE, MAX_QUERY_WC, MAX_DOC_WC, BIN_NUM, \
+from config import VEC_SIZE, MAX_QUERY_WC, BIN_NUM, \
     INITIAL_LR, INITIAL_DECAY, REGULARIZATION_PARAM, \
     MODEL_DIR, LATEST_MODEL_PATH, MODEL_FILE_PATTERN, FIGURE_DIR
 
-
-tf.enable_eager_execution()
 
 tf.set_random_seed(seed = 0)
 
@@ -25,30 +22,21 @@ def get_model_paths(sort_by: str = 'epoch', reverse: bool = False) -> List[str]:
 
 
 def build_network(model_path: str = None) -> keras.Model:
+    if model_path is None:
+        try:
+            model_paths: List[str] = get_model_paths(sort_by = 'val_acc', reverse = True)
+            model_path: str = model_paths[0]
+            print(f'best_model_path = {model_path}')
+        except IndexError:
+            model_path: str = LATEST_MODEL_PATH
+    try:
+        keras.models.load_model(filepath = model_path)
+    except OSError:
+        pass
+    
     # Inputs
     embedded_query = keras.layers.Input(shape = (MAX_QUERY_WC, VEC_SIZE), name = 'Embedded_query')
-    embedded_doc = keras.layers.Input(shape = (MAX_DOC_WC, VEC_SIZE), name = 'Embedded_doc')
-    
-    # Calculate QA Matching Matrix
-    Dot_1 = keras.layers.Dot(axes = [-1, -1], normalize = True, name = 'Dot_1')
-    qa_matrix = Dot_1([embedded_query, embedded_doc])  # shape == [BATCH_SIZE, MAX_QUERY_WC, MAX_DOC_WC]
-    
-    # Input Layer to Hidden Layer
-    def cal_bin_sum(input: tf.Tensor) -> tf.Tensor:
-        n_sample: int = input.shape[0]
-        output: np.ndarray = np.zeros(shape = (n_sample, MAX_QUERY_WC, BIN_NUM))
-        indexes: tf.Tensor = (input + 1) * (BIN_NUM - 1) / 2
-        indexes = keras.backend.cast(indexes, dtype = tf.int32)
-        for s in range(n_sample):
-            for i in range(MAX_QUERY_WC):
-                for j in range(MAX_DOC_WC):
-                    k: int = indexes[s, i, j]
-                    output[s, i, k] += input[s, i, j]
-        return keras.backend.variable(output)
-    
-    CalBinSum_2 = keras.layers.Lambda(function = cal_bin_sum, output_shape = (MAX_QUERY_WC, BIN_NUM),
-                                      name = 'CalBinSum_2')
-    bin_sum = CalBinSum_2(qa_matrix)  # shape == [BATCH_SIZE, MAX_QUERY_WC, BIN_NUM]
+    bin_sum = keras.layers.Input(shape = (MAX_QUERY_WC, BIN_NUM), name = 'Bin_sum')
     
     # Hidden Layers
     hidden_layer = bin_sum
@@ -81,25 +69,13 @@ def build_network(model_path: str = None) -> keras.Model:
     logits = Dot_8([query_weights, last_hidden_layer])  # shape == [BATCH_SIZE, 1]
     prediction = Sigmoid_8(logits)  # shape == [BATCH_SIZE, 1]
     
-    model = keras.Model(inputs = [embedded_query, embedded_doc], outputs = prediction)
+    model = keras.Model(inputs = [embedded_query, bin_sum], outputs = prediction)
     
-    # RMSprop_optimizer = keras.optimizers.RMSprop(lr = INITIAL_LR, decay = INITIAL_DECAY)
-    from tensorflow.python.keras.optimizers import TFOptimizer
-    RMSprop_optimizer = tf.train.RMSPropOptimizer(learning_rate = INITIAL_LR)
-    RMSprop_optimizer = TFOptimizer(optimizer = RMSprop_optimizer)
+    RMSprop_optimizer = keras.optimizers.RMSprop(lr = INITIAL_LR, decay = INITIAL_DECAY)
     model.compile(optimizer = RMSprop_optimizer, loss = 'binary_crossentropy', metrics = ['acc'])
     
-    if model_path is None:
-        try:
-            model_paths: List[str] = get_model_paths(sort_by = 'val_acc', reverse = True)
-            model_path: str = model_paths[0]
-            print(f'best_model_path = {model_path}')
-        except IndexError:
-            model_path: str = LATEST_MODEL_PATH
-    try:
-        model.load_weights(filepath = model_path)
-    except OSError:
-        model.save_weights(filepath = LATEST_MODEL_PATH)
+    model.save(filepath = LATEST_MODEL_PATH)
+    
     return model
 
 

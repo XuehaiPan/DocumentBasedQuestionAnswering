@@ -1,6 +1,6 @@
 from typing import List
 from tensorflow import keras
-from dataset import get_all_data, DataSequence
+from dataset import DataSequence
 from config import BATCH_SIZE, WORKERS, \
     MODEL_FMT_STR, MODEL_FILE_PATTERN, LATEST_MODEL_PATH, \
     LOG_DIR, LOG_FILE_PATH

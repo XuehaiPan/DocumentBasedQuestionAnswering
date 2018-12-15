@@ -8,7 +8,7 @@ from typing import Dict, Pattern
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 # batch size
-BATCH_SIZE: int = 64
+BATCH_SIZE: int = 16
 
 # word vector size
 VEC_SIZE: int = 128
@@ -35,7 +35,7 @@ REGULARIZATION_PARAM: float = 1E-2
 WORKERS: int = cpu_count()
 WORKERS = max(1, int(0.75 * WORKERS))
 
-# labels
+# label_lists
 POSITIVE: int = 1
 NEGATIVE: int = 0
 
