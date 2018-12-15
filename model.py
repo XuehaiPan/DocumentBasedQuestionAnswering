@@ -52,7 +52,7 @@ def build_network(model_path: str = None) -> keras.Model:
     
     # Hidden Layers
     hidden_layer = bin_sum
-    hidden_layer_sizes = [64, 32, 16, 1]
+    hidden_layer_sizes: List[int] = [64, 32, 16, 1]
     for i, units in enumerate(hidden_layer_sizes, start = 3):
         Dense_i = keras.layers.Dense(units = units, activation = None, use_bias = True,
                                      kernel_regularizer = keras.regularizers.l2(l = REGULARIZATION_PARAM),
@@ -83,11 +83,11 @@ def build_network(model_path: str = None) -> keras.Model:
     
     model = keras.Model(inputs = [embedded_query, embedded_doc], outputs = prediction)
     
-    # RMSprop_Optimizer = keras.optimizers.RMSprop(lr = INITIAL_LR, decay = INITIAL_DECAY)
+    # RMSprop_optimizer = keras.optimizers.RMSprop(lr = INITIAL_LR, decay = INITIAL_DECAY)
     from tensorflow.python.keras.optimizers import TFOptimizer
-    RMSprop_Optimizer = tf.train.RMSPropOptimizer(learning_rate = INITIAL_LR)
-    RMSprop_Optimizer = TFOptimizer(optimizer = RMSprop_Optimizer)
-    model.compile(optimizer = RMSprop_Optimizer, loss = 'binary_crossentropy', metrics = ['acc'])
+    RMSprop_optimizer = tf.train.RMSPropOptimizer(learning_rate = INITIAL_LR)
+    RMSprop_optimizer = TFOptimizer(optimizer = RMSprop_optimizer)
+    model.compile(optimizer = RMSprop_optimizer, loss = 'binary_crossentropy', metrics = ['acc'])
     
     if model_path is None:
         try:

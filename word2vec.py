@@ -44,7 +44,7 @@ def get_word2vec_model() -> KeyedVectors:
     
     epoch_logger = EpochLogger()
     
-    model: Word2Vec = Word2Vec(sentences = sentences, size = VEC_SIZE, min_count = 1, workers = WORKERS)
+    model: Word2Vec = Word2Vec(sentences = sentences, size = VEC_SIZE, min_count = 3, workers = WORKERS)
     model.train(sentences = sentences, total_examples = len(sentences), epochs = 50, callbacks = [epoch_logger])
     
     model.wv.save(WORD2VEC_MODEL_PATH)
@@ -64,11 +64,3 @@ def get_vectors(word_list: List[str]) -> List[np.ndarray]:
             vec: np.ndarray = np.zeros(shape = VEC_SIZE, dtype = np.float32)
         vec_list.append(vec)
     return vec_list
-
-
-def main() -> None:
-    get_word2vec_model()
-
-
-if __name__ == '__main__':
-    main()
