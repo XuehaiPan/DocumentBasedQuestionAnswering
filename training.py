@@ -23,8 +23,6 @@ class MyTensorBoard(keras.callbacks.TensorBoard):
 def train(epochs: int) -> None:
     train_data = DataSequence(dataset = 'train', batch_size = BATCH_SIZE)
     validation_data = DataSequence(dataset = 'validation', batch_size = BATCH_SIZE)
-    # x_train, y_train = get_all_data(dataset = 'train')
-    # x_valid, y_valid = get_all_data(dataset = 'validation')
     
     tensorBoard = MyTensorBoard(log_dir = LOG_DIR,
                                 histogram_freq = 0,
@@ -64,12 +62,12 @@ def train(epochs: int) -> None:
                             epochs = epochs, initial_epoch = initial_epoch,
                             validation_data = validation_data, shuffle = True,
                             callbacks = [tensorBoard, csvLogger, checkpoint, checkpointLatest, terminateOnNaN, earlyStopping],
-                            workers = WORKERS)
+                            workers = WORKERS, use_multiprocessing = True)
     except KeyboardInterrupt:
         pass
     finally:
         print(f'save current model to {LATEST_MODEL_PATH}')
-        model.save_weights(filepath = LATEST_MODEL_PATH)
+        model.save(filepath = LATEST_MODEL_PATH)
 
 
 def main() -> None:
