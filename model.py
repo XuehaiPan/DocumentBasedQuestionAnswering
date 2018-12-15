@@ -4,7 +4,7 @@ from glob import glob
 import tensorflow as tf
 from tensorflow import keras
 from config import VEC_SIZE, MAX_QUERY_WC, BIN_NUM, \
-    INITIAL_LR, INITIAL_DECAY, REGULARIZATION_PARAM, \
+    DROPOUT_RATE, INITIAL_LR, INITIAL_DECAY, REGULARIZATION_PARAM, \
     MODEL_DIR, LATEST_MODEL_PATH, MODEL_FILE_PATTERN, FIGURE_DIR
 
 
@@ -42,11 +42,13 @@ def build_network(model_path: str = None) -> keras.Model:
     hidden_layer = bin_sum
     hidden_layer_sizes: List[int] = [64, 32, 16, 1]
     for i, units in enumerate(hidden_layer_sizes, start = 3):
+        Dropout_i = keras.layers.Dropout(rate = DROPOUT_RATE)
         Dense_i = keras.layers.Dense(units = units, activation = None, use_bias = True,
                                      kernel_regularizer = keras.regularizers.l2(l = REGULARIZATION_PARAM),
                                      name = f'Dense_{i}')
         BatchNorm_i = keras.layers.BatchNormalization(name = f'BatchNorm_{i}')
         Tanh_i = keras.layers.Activation(activation = 'tanh', name = f'Tanh_{i}')
+        hidden_layer = Dropout_i(hidden_layer)
         hidden_layer = Dense_i(hidden_layer)  # shape == [BATCH_SIZE, MAX_QUERY_WC, units]
         hidden_layer = BatchNorm_i(hidden_layer)  # shape == [BATCH_SIZE, MAX_QUERY_WC, units]
         hidden_layer = Tanh_i(hidden_layer)  # shape == [BATCH_SIZE, MAX_QUERY_WC, units]

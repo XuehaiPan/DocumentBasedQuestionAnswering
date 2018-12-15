@@ -22,6 +22,9 @@ MAX_DOC_WC: int = 160
 # number of bins
 BIN_NUM: int = 21
 
+# dropout rate
+DROPOUT_RATE: float = 0.5
+
 # initial learning rate
 INITIAL_LR: float = 1E-3
 
