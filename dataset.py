@@ -102,7 +102,7 @@ class DataSequence(keras.utils.Sequence):
             split_doc_list: List[List[str]] = list(map(cut_sentence, doc_list))
             
             if data_augmentation:
-                n_doc = len(label_list)
+                n_doc: int = len(label_list)
                 n_pos_doc: int = label_list.count(POSITIVE)
                 n_neg_doc: int = n_doc - n_pos_doc
                 try:
@@ -183,13 +183,13 @@ def draw_data_distribution() -> None:
         longest_doc_query: str = ''
         max_doc_wc: int = 0
         for query, doc_list, _ in query_doc_label_generator(dataset = dataset):
-            query_wc = len(cut_sentence(sentence = query))
+            query_wc: int = len(cut_sentence(sentence = query))
             query_wc_list.append(query_wc)
             doc_cnt_list.append(len(doc_list))
             if query_wc > max_query_wc:
                 longest_query, max_query_wc = query, query_wc
             for doc in doc_list:
-                doc_wc = len(cut_sentence(sentence = doc))
+                doc_wc: int = len(cut_sentence(sentence = doc))
                 doc_wc_list.append(doc_wc)
                 if doc_wc > max_doc_wc:
                     longest_doc, longest_doc_query, max_doc_wc = doc, query, doc_wc
