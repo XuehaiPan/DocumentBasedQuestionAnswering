@@ -112,7 +112,7 @@ class DataSequence(keras.utils.Sequence):
                 else:
                     for i in range(n_doc):
                         if label_list[i] == POSITIVE:
-                            doc_list.extend([doc_list[i]] * factor)
+                            split_doc_list.extend([split_doc_list[i]] * factor)
                             label_list.extend([POSITIVE] * factor)
             
             self.queries.append(cut_sentence(sentence = query))
@@ -266,9 +266,7 @@ def draw_data_distribution() -> None:
 
 
 def main() -> None:
-    DataSequence(dataset = 'train', batch_size = 16, data_augmentation = True)
-    DataSequence(dataset = 'train', batch_size = 16, data_augmentation = False)
-    # draw_data_distribution()
+    draw_data_distribution()
 
 
 if __name__ == '__main__':
