@@ -1,14 +1,10 @@
 import os
 from typing import List
 from glob import glob
-import tensorflow as tf
-from tensorflow import keras
+import keras
 from config import VEC_SIZE, MAX_QUERY_WC, BIN_NUM, \
     DROPOUT_RATE, INITIAL_LR, INITIAL_DECAY, REGULARIZATION_PARAM, \
     MODEL_DIR, LATEST_MODEL_PATH, MODEL_FILE_PATTERN, FIGURE_DIR
-
-
-tf.set_random_seed(seed = 0)
 
 
 def get_model_paths(sort_by: str = 'epoch', reverse: bool = False) -> List[str]:
@@ -40,36 +36,36 @@ def build_network(model_path: str = None) -> keras.Model:
     
     # Hidden Layers
     hidden_layer = bin_sum
-    hidden_layer_sizes: List[int] = [64, 32, 16, 1]
-    for i, units in enumerate(hidden_layer_sizes, start = 3):
-        Dropout_i = keras.layers.Dropout(rate = DROPOUT_RATE)
+    hidden_layer_sizes: List[int] = [128, 64, 32, 16, 1]
+    for i, units in enumerate(hidden_layer_sizes, start = 1):
+        Dropout_i = keras.layers.Dropout(rate = DROPOUT_RATE, name = f'Dropout_{i}')
         Dense_i = keras.layers.Dense(units = units, activation = None, use_bias = True,
                                      kernel_regularizer = keras.regularizers.l2(l = REGULARIZATION_PARAM),
                                      name = f'Dense_{i}')
         BatchNorm_i = keras.layers.BatchNormalization(name = f'BatchNorm_{i}')
-        Tanh_i = keras.layers.Activation(activation = 'tanh', name = f'Tanh_{i}')
+        ReLU_i = keras.layers.ReLU(name = f'ReLU_{i}')
         hidden_layer = Dropout_i(hidden_layer)
         hidden_layer = Dense_i(hidden_layer)  # shape == [BATCH_SIZE, MAX_QUERY_WC, units]
         hidden_layer = BatchNorm_i(hidden_layer)  # shape == [BATCH_SIZE, MAX_QUERY_WC, units]
-        hidden_layer = Tanh_i(hidden_layer)  # shape == [BATCH_SIZE, MAX_QUERY_WC, units]
-    Reshape_6 = keras.layers.Reshape(target_shape = (MAX_QUERY_WC,), name = 'Reshape_6')
-    last_hidden_layer = Reshape_6(hidden_layer)  # shape == [BATCH_SIZE, MAX_QUERY_WC]
+        hidden_layer = ReLU_i(hidden_layer)  # shape == [BATCH_SIZE, MAX_QUERY_WC, units]
+    Reshape_5 = keras.layers.Reshape(target_shape = (MAX_QUERY_WC,), name = 'Reshape_5')
+    last_hidden_layer = Reshape_5(hidden_layer)  # shape == [BATCH_SIZE, MAX_QUERY_WC]
     
     # Hidden Layer to Output Layer
-    Dense_7 = keras.layers.Dense(units = 1, activation = None, use_bias = False,
+    Dense_6 = keras.layers.Dense(units = 1, activation = None, use_bias = False,
                                  kernel_regularizer = keras.regularizers.l2(l = REGULARIZATION_PARAM),
-                                 name = 'Dense_7')
-    Reshape_7 = keras.layers.Reshape(target_shape = (MAX_QUERY_WC,), name = 'Reshape_7')
-    Softmax_7 = keras.layers.Softmax(name = 'Softmax_7')
-    query_weights = Dense_7(embedded_query)  # shape == [BATCH_SIZE, MAX_QUERY_WC, 1]
-    query_weights = Reshape_7(query_weights)  # shape == [BATCH_SIZE, MAX_QUERY_WC]
-    query_weights = Softmax_7(query_weights)  # shape == [BATCH_SIZE, MAX_QUERY_WC]
+                                 name = 'Dense_6')
+    Reshape_6 = keras.layers.Reshape(target_shape = (MAX_QUERY_WC,), name = 'Reshape_6')
+    Softmax_6 = keras.layers.Softmax(name = 'Softmax_6')
+    query_weights = Dense_6(embedded_query)  # shape == [BATCH_SIZE, MAX_QUERY_WC, 1]
+    query_weights = Reshape_6(query_weights)  # shape == [BATCH_SIZE, MAX_QUERY_WC]
+    query_weights = Softmax_6(query_weights)  # shape == [BATCH_SIZE, MAX_QUERY_WC]
     
     # Output Layer
-    Dot_8 = keras.layers.Dot(axes = [-1, -1], name = 'Dot_8')
-    Sigmoid_8 = keras.layers.Activation(activation = 'sigmoid', name = 'Sigmoid_8')
-    logits = Dot_8([query_weights, last_hidden_layer])  # shape == [BATCH_SIZE, 1]
-    prediction = Sigmoid_8(logits)  # shape == [BATCH_SIZE, 1]
+    Dot_7 = keras.layers.Dot(axes = [-1, -1], name = 'Dot_7')
+    Sigmoid_7 = keras.layers.Activation(activation = 'sigmoid', name = 'Sigmoid_7')
+    logits = Dot_7([query_weights, last_hidden_layer])  # shape == [BATCH_SIZE, 1]
+    prediction = Sigmoid_7(logits)  # shape == [BATCH_SIZE, 1]
     
     model = keras.Model(inputs = [embedded_query, bin_sum], outputs = prediction)
     

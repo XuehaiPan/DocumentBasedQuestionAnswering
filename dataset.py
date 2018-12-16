@@ -1,7 +1,7 @@
 import os
 from typing import List, Tuple, Dict, Iterator
 import numpy as np
-from tensorflow import keras
+import keras
 from jieba import Tokenizer
 from config import POSITIVE, NEGATIVE, \
     VEC_SIZE, MAX_QUERY_WC, MAX_DOC_WC, BIN_NUM, \
@@ -90,7 +90,7 @@ def sent2vec(word_list: List[str], max_wc: int) -> np.ndarray:
 
 
 class DataSequence(keras.utils.Sequence):
-    def __init__(self, dataset: str, batch_size: int, data_augmentation = False) -> None:
+    def __init__(self, dataset: str, batch_size: int, data_augmentation: bool = False) -> None:
         """ Initialize self. """
         super(DataSequence, self).__init__()
         self.dataset: str = dataset
