@@ -3,7 +3,8 @@ from typing import List, Tuple, Dict, Iterator
 import numpy as np
 from tensorflow import keras
 from jieba import Tokenizer
-from config import VEC_SIZE, MAX_QUERY_WC, MAX_DOC_WC, BIN_NUM, \
+from config import POSITIVE, NEGATIVE, \
+    VEC_SIZE, MAX_QUERY_WC, MAX_DOC_WC, BIN_NUM, \
     DATA_FILE_PATH, DICTIONARY_PATH, FIGURE_DIR
 
 
@@ -89,7 +90,7 @@ def sent2vec(word_list: List[str], max_wc: int) -> np.ndarray:
 
 
 class DataSequence(keras.utils.Sequence):
-    def __init__(self, dataset: str, batch_size: int) -> None:
+    def __init__(self, dataset: str, batch_size: int, data_augmentation = False) -> None:
         """ Initialize self. """
         super(DataSequence, self).__init__()
         self.dataset: str = dataset
@@ -98,9 +99,41 @@ class DataSequence(keras.utils.Sequence):
         self.doc_lists: List[List[List[str]]] = []
         self.label_lists: List[List[int]] = []
         for query, doc_list, label_list in query_doc_label_generator(dataset = dataset):
+            split_doc_list: List[List[str]] = list(map(cut_sentence, doc_list))
+            
+            if data_augmentation:
+                n_doc = len(label_list)
+                n_pos_doc: int = label_list.count(POSITIVE)
+                n_neg_doc: int = n_doc - n_pos_doc
+                try:
+                    factor: int = n_neg_doc // n_pos_doc - 1
+                except ZeroDivisionError:
+                    pass
+                else:
+                    for i in range(n_doc):
+                        if label_list[i] == POSITIVE:
+                            doc_list.extend([doc_list[i]] * factor)
+                            label_list.extend([POSITIVE] * factor)
+            
             self.queries.append(cut_sentence(sentence = query))
-            self.doc_lists.append(list(map(cut_sentence, doc_list)))
+            self.doc_lists.append(split_doc_list)
             self.label_lists.append(label_list)
+        
+        n_query: int = len(self.queries)
+        n_doc: int = sum(map(len, self.label_lists))
+        n_pos_doc: int = sum(label_list.count(POSITIVE) for label_list in self.label_lists)
+        n_neg_doc: int = n_doc - n_pos_doc
+        print(f'{{\n'
+              f'    dataset: {dataset},\n'
+              f'    query_num: {n_query},\n'
+              f'    doc_num: {n_doc},\n'
+              f'    positive_doc_num: {n_pos_doc},\n'
+              f'    negative_doc_num: {n_neg_doc},\n'
+              f'    average_doc_count_per_query: {n_doc / n_query:.2f},\n'
+              f'    average_positive_doc_num_per_query: {n_pos_doc / n_query:.2f},\n'
+              f'    average_negative_doc_num_per_query: {n_neg_doc / n_query:.2f},\n'
+              f'    use_data_augmentation: {data_augmentation}\n'
+              f'}}')
     
     def __getitem__(self, index: int) -> Tuple[List[np.ndarray], np.ndarray]:
         queries: List[List[str]] = self.queries[index * self.batch_size:(index + 1) * self.batch_size]
@@ -161,14 +194,14 @@ def draw_data_distribution() -> None:
                 if doc_wc > max_doc_wc:
                     longest_doc, longest_doc_query, max_doc_wc = doc, query, doc_wc
         print(f'{{\n'
-              f'    dataset: {dataset}\n'
+              f'    dataset: {dataset},\n'
               f'    \n'
               f'    longest_query: \'{longest_query}\',\n'
-              f'    cut_longest_query: {cut_sentence(sentence = longest_query)}\n'
-              f'    max_query_word_count: {max_query_wc}\n'
+              f'    cut_longest_query: {cut_sentence(sentence = longest_query)},\n'
+              f'    max_query_word_count: {max_query_wc},\n'
               f'    \n'
               f'    longest_doc: \'{longest_doc}\',\n'
-              f'    cut_longest_doc: {cut_sentence(sentence = longest_doc)}\n'
+              f'    cut_longest_doc: {cut_sentence(sentence = longest_doc)},\n'
               f'    query_of_longest_doc: \'{longest_doc_query}\',\n'
               f'    max_doc_word_count: {max_doc_wc}\n'
               f'}}\n')
@@ -233,7 +266,9 @@ def draw_data_distribution() -> None:
 
 
 def main() -> None:
-    draw_data_distribution()
+    DataSequence(dataset = 'train', batch_size = 16, data_augmentation = True)
+    DataSequence(dataset = 'train', batch_size = 16, data_augmentation = False)
+    # draw_data_distribution()
 
 
 if __name__ == '__main__':

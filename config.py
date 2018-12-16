@@ -42,7 +42,7 @@ WORKERS = max(1, int(0.75 * WORKERS))
 POSITIVE: int = 1
 NEGATIVE: int = 0
 
-DATA_DIR: str = './data/'
+DATA_DIR: str = os.path.join('.', 'data')
 DATA_FILE_PATH: Dict[str, str] = {
     name: os.path.join(DATA_DIR, f'{name}-set.data')
     for name in ('train', 'validation', 'test')
@@ -51,9 +51,9 @@ DATA_FILE_PATH: Dict[str, str] = {
 # test data not given yet
 del DATA_FILE_PATH['test']
 
-FIGURE_DIR: str = './figures/'
-MODEL_DIR: str = './models/'
-LOG_DIR: str = './logs/'
+FIGURE_DIR: str = os.path.join('.', 'figures')
+MODEL_DIR: str = os.path.join('.', 'models')
+LOG_DIR: str = os.path.join('.', 'logs')
 
 for DIR in (FIGURE_DIR, MODEL_DIR, LOG_DIR):
     os.makedirs(DIR, exist_ok = True)

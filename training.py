@@ -21,8 +21,8 @@ class MyTensorBoard(keras.callbacks.TensorBoard):
 
 
 def train(epochs: int) -> None:
-    train_data = DataSequence(dataset = 'train', batch_size = BATCH_SIZE)
-    validation_data = DataSequence(dataset = 'validation', batch_size = BATCH_SIZE)
+    train_data = DataSequence(dataset = 'train', batch_size = BATCH_SIZE, data_augmentation = True)
+    validation_data = DataSequence(dataset = 'validation', batch_size = BATCH_SIZE, data_augmentation = False)
     
     tensorBoard = MyTensorBoard(log_dir = LOG_DIR,
                                 histogram_freq = 0,
