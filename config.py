@@ -36,7 +36,7 @@ REGULARIZATION_PARAM: float = 1E-3
 
 # workers
 WORKERS: int = cpu_count()
-WORKERS = max(1, min(int(0.75 * WORKERS), WORKERS - 4))
+WORKERS = max(1, int(0.75 * WORKERS), WORKERS - 2)
 
 # label_lists
 POSITIVE: int = 1
