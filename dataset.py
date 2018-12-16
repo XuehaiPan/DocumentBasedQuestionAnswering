@@ -145,17 +145,17 @@ class DataSequence(keras.utils.Sequence):
         bin_sum: np.ndarray = np.zeros(shape = (n_sample, MAX_QUERY_WC, BIN_NUM), dtype = np.float32)
         labels: np.ndarray = np.zeros(shape = (n_sample,), dtype = np.float32)
         
-        s = 0
+        s: int = 0
         for query, doc_list, label_list in zip(queries, doc_lists, label_lists):
             embedded_query: List[np.ndarray] = sent2vec(word_list = query, max_wc = MAX_QUERY_WC)
             for doc, label in zip(doc_list, label_list):
                 embedded_doc: np.ndarray = sent2vec(word_list = doc, max_wc = MAX_DOC_WC)
-                qa_matrix = np.tensordot(embedded_query, embedded_doc, axes = (-1, -1))
+                qa_matrix: np.ndarray = np.tensordot(embedded_query, embedded_doc, axes = (-1, -1))
                 for i in range(MAX_QUERY_WC):
                     for j in range(MAX_DOC_WC):
                         val: float = qa_matrix[i, j]
                         k: int = int((val + 1) * (BIN_NUM - 1) / 2)
-                        bin_sum[s, i, k] = qa_matrix[i, j]
+                        bin_sum[s, i, k] += qa_matrix[i, j]
                 labels[s] = label
                 s += 1
         
