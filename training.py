@@ -57,6 +57,7 @@ def train(epochs: int) -> None:
     try:
         print(f'initial_epoch = {initial_epoch}')
         print(f'initial_model_path = {initial_model_path}')
+        print(f'workers = {WORKERS}')
         model.fit_generator(generator = train_data,
                             epochs = epochs, initial_epoch = initial_epoch,
                             validation_data = validation_data, shuffle = True,
