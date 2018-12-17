@@ -3,6 +3,6 @@ matplotlib
 seaborn
 pandas
 tensorflow
-keras >= 2.2
+keras >= 2.2.4
 gensim
 jieba

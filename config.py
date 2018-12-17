@@ -63,7 +63,7 @@ del DIR
 DICTIONARY_PATH: str = os.path.join(MODEL_DIR, 'dictionary.txt')
 WORD2VEC_MODEL_PATH: str = os.path.join(MODEL_DIR, 'word2vec.model')
 LATEST_MODEL_PATH: str = os.path.join(MODEL_DIR, 'latest.h5')
-LOG_FILE_PATH: str = os.path.join(LOG_DIR, 'log.csv')
+LOG_FILE_PATH: str = os.path.join(LOG_DIR, 'logs.csv')
 
 MODEL_FILE_PATTERN: Pattern = re.compile(r'.*epoch(?P<epoch>\d*)_acc(?P<val_acc>[\d.]*)\.h5')
 MODEL_FMT_STR: str = os.path.join(MODEL_DIR, 'epoch{epoch:02d}_acc{val_acc:.4f}.h5')
