@@ -236,7 +236,7 @@ def draw_data_distribution() -> None:
             ax.set_ylabel(ylabel = 'Relative Frequency')
             ax.legend()
         doc_cnt_ax.set_xlabel(xlabel = 'Doc Count')
-        doc_cnt_ax.set_ylabel(ylabel = 'Relative Frequency')
+        doc_cnt_ax.set_ylabel(ylabel = 'Query Num')
     
     fig: plt.Figure
     axes: Dict[Tuple[int, int], plt.Axes]
