@@ -29,7 +29,7 @@ def train(epochs: int) -> None:
                                 batch_size = BATCH_SIZE,
                                 write_graph = True,
                                 write_grads = True,
-                                write_images = True
+                                write_images = True,
                                 update_freq = 'batch')
     csvLogger = keras.callbacks.CSVLogger(filename = LOG_FILE_PATH,
                                           append = True)
