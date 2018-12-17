@@ -1,9 +1,9 @@
-python >=3.6,<3.7.0a0
-numpy >=1.13.3,<2.0a0
+python >= 3.6
+numpy
 matplotlib
 seaborn
 pandas
-tensorflow >=1.12.0
-keras
+tensorflow
+keras >= 2.2
 gensim
 jieba
