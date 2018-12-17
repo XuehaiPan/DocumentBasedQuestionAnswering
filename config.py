@@ -32,7 +32,7 @@ INITIAL_LR: float = 1E-3
 INITIAL_DECAY: float = 1E-4
 
 # regularization param
-REGULARIZATION_PARAM: float = 1E-3
+REGULARIZATION_PARAM: float = 1E-5
 
 # workers
 WORKERS: int = cpu_count()
