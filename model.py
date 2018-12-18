@@ -26,7 +26,7 @@ def build_network(model_path: str = None) -> keras.Model:
         except IndexError:
             model_path: str = LATEST_MODEL_PATH
     try:
-        keras.models.load_model(filepath = model_path)
+        return keras.models.load_model(filepath = model_path)
     except OSError:
         pass
     
