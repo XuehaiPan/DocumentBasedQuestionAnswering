@@ -21,10 +21,10 @@ def build_network(model_path: str = None) -> keras.Model:
     if model_path is None:
         try:
             model_paths: List[str] = get_model_paths(sort_by = 'val_acc', reverse = True)
-            model_path: str = model_paths[0]
+            model_path = model_paths[0]
             print(f'best_model_path = {model_path}')
         except IndexError:
-            model_path: str = LATEST_MODEL_PATH
+            model_path = LATEST_MODEL_PATH
     try:
         return keras.models.load_model(filepath = model_path)
     except OSError:
@@ -45,11 +45,11 @@ def build_network(model_path: str = None) -> keras.Model:
         BatchNorm_i = keras.layers.BatchNormalization(name = f'BatchNorm_{i}')
         ReLU_i = keras.layers.ReLU(name = f'ReLU_{i}')
         hidden_layer = Dropout_i(hidden_layer)
-        hidden_layer = Dense_i(hidden_layer)  # shape == [BATCH_SIZE, MAX_QUERY_WC, units]
-        hidden_layer = BatchNorm_i(hidden_layer)  # shape == [BATCH_SIZE, MAX_QUERY_WC, units]
-        hidden_layer = ReLU_i(hidden_layer)  # shape == [BATCH_SIZE, MAX_QUERY_WC, units]
+        hidden_layer = Dense_i(hidden_layer)  # shape == [batch_size, MAX_QUERY_WC, units]
+        hidden_layer = BatchNorm_i(hidden_layer)  # shape == [batch_size, MAX_QUERY_WC, units]
+        hidden_layer = ReLU_i(hidden_layer)  # shape == [batch_size, MAX_QUERY_WC, units]
     Reshape_5 = keras.layers.Reshape(target_shape = (MAX_QUERY_WC,), name = 'Reshape_5')
-    last_hidden_layer = Reshape_5(hidden_layer)  # shape == [BATCH_SIZE, MAX_QUERY_WC]
+    last_hidden_layer = Reshape_5(hidden_layer)  # shape == [batch_size, MAX_QUERY_WC]
     
     # Hidden Layer to Output Layer
     Dense_6 = keras.layers.Dense(units = 1, activation = None, use_bias = False,
@@ -57,15 +57,15 @@ def build_network(model_path: str = None) -> keras.Model:
                                  name = 'Dense_6')
     Reshape_6 = keras.layers.Reshape(target_shape = (MAX_QUERY_WC,), name = 'Reshape_6')
     Softmax_6 = keras.layers.Softmax(name = 'Softmax_6')
-    query_weights = Dense_6(embedded_query)  # shape == [BATCH_SIZE, MAX_QUERY_WC, 1]
-    query_weights = Reshape_6(query_weights)  # shape == [BATCH_SIZE, MAX_QUERY_WC]
-    query_weights = Softmax_6(query_weights)  # shape == [BATCH_SIZE, MAX_QUERY_WC]
+    query_weights = Dense_6(embedded_query)  # shape == [batch_size, MAX_QUERY_WC, 1]
+    query_weights = Reshape_6(query_weights)  # shape == [batch_size, MAX_QUERY_WC]
+    query_weights = Softmax_6(query_weights)  # shape == [batch_size, MAX_QUERY_WC]
     
     # Output Layer
     Dot_7 = keras.layers.Dot(axes = [-1, -1], name = 'Dot_7')
     Sigmoid_7 = keras.layers.Activation(activation = 'sigmoid', name = 'Sigmoid_7')
-    logits = Dot_7([query_weights, last_hidden_layer])  # shape == [BATCH_SIZE, 1]
-    prediction = Sigmoid_7(logits)  # shape == [BATCH_SIZE, 1]
+    logits = Dot_7([query_weights, last_hidden_layer])  # shape == [batch_size, 1]
+    prediction = Sigmoid_7(logits)  # shape == [batch_size, 1]
     
     model = keras.Model(inputs = [embedded_query, bin_sum], outputs = prediction)
     

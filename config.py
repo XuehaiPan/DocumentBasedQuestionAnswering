@@ -31,7 +31,7 @@ INITIAL_LR: float = 1E-3
 # learning rate decay over each update
 INITIAL_DECAY: float = 1E-4
 
-# regularization param
+# regularization parameter
 REGULARIZATION_PARAM: float = 1E-5
 
 # workers

@@ -20,6 +20,18 @@ class MyTensorBoard(keras.callbacks.TensorBoard):
         super().on_epoch_end(epoch, logs)
 
 
+class MyModelCheckpoint(keras.callbacks.ModelCheckpoint):
+    def __init__(self, *args, **kwargs):
+        """ Initialize self. """
+        super(MyModelCheckpoint, self).__init__(*args, **kwargs)
+    
+    def on_epoch_end(self, epoch, logs = None):
+        try:
+            super().on_epoch_end(epoch = epoch, logs = logs)
+        except OSError:
+            pass
+
+
 def train(epochs: int) -> None:
     train_data = DataSequence(dataset = 'train', batch_size = BATCH_SIZE, data_augmentation = True)
     validation_data = DataSequence(dataset = 'validation', batch_size = BATCH_SIZE, data_augmentation = False)
@@ -33,12 +45,12 @@ def train(epochs: int) -> None:
                                 update_freq = 'batch')
     csvLogger = keras.callbacks.CSVLogger(filename = LOG_FILE_PATH,
                                           append = True)
-    checkpoint = keras.callbacks.ModelCheckpoint(filepath = MODEL_FMT_STR,
-                                                 monitor = 'val_acc',
-                                                 verbose = 1)
-    checkpointLatest = keras.callbacks.ModelCheckpoint(filepath = LATEST_MODEL_PATH,
-                                                       monitor = 'val_acc',
-                                                       verbose = 1)
+    checkpoint = MyModelCheckpoint(filepath = MODEL_FMT_STR,
+                                   monitor = 'val_acc',
+                                   verbose = 1)
+    checkpointLatest = MyModelCheckpoint(filepath = LATEST_MODEL_PATH,
+                                         monitor = 'val_acc',
+                                         verbose = 1)
     terminateOnNaN = keras.callbacks.TerminateOnNaN()
     earlyStopping = keras.callbacks.EarlyStopping(monitor = 'val_loss',
                                                   patience = 5,
