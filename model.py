@@ -41,11 +41,9 @@ def build_network(model_path: str = None) -> keras.Model:
         Dense_i = keras.layers.Dense(units = units, activation = None, use_bias = True,
                                      kernel_regularizer = keras.regularizers.l2(l = REGULARIZATION_PARAM),
                                      name = f'Dense_{i}')
-        BatchNorm_i = keras.layers.BatchNormalization(name = f'BatchNorm_{i}')
-        ReLU_i = keras.layers.ReLU(name = f'ReLU_{i}')
+        LeakyReLU_i = keras.layers.LeakyReLU(alpha = 0.1, name = f'LeakyReLU_{i}')
         hidden_layer = Dense_i(hidden_layer)  # shape == [batch_size, MAX_QUERY_WC, units]
-        hidden_layer = BatchNorm_i(hidden_layer)  # shape == [batch_size, MAX_QUERY_WC, units]
-        hidden_layer = ReLU_i(hidden_layer)  # shape == [batch_size, MAX_QUERY_WC, units]
+        hidden_layer = LeakyReLU_i(hidden_layer)  # shape == [batch_size, MAX_QUERY_WC, units]
     Reshape_5 = keras.layers.Reshape(target_shape = (MAX_QUERY_WC,), name = 'Reshape_5')
     last_hidden_layer = Reshape_5(hidden_layer)  # shape == [batch_size, MAX_QUERY_WC]
     
