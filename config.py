@@ -22,9 +22,6 @@ MAX_DOC_WC: int = 160
 # number of bins
 BIN_NUM: int = 201
 
-# dropout rate
-DROPOUT_RATE: float = 0.5
-
 # initial learning rate
 INITIAL_LR: float = 1E-3
 
@@ -36,7 +33,7 @@ REGULARIZATION_PARAM: float = 1E-5
 
 # workers
 WORKERS: int = cpu_count()
-WORKERS = max(1, int(0.75 * WORKERS), WORKERS - 2)
+WORKERS = max(1, int(0.75 * WORKERS))
 
 # label_lists
 POSITIVE: int = 1

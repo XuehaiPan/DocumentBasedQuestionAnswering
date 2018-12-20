@@ -13,6 +13,7 @@ class MyTensorBoard(keras.callbacks.TensorBoard):
     
     def on_epoch_end(self, epoch: int, logs: dict = None) -> None:
         # log learning rate
+        logs = logs or {}
         try:
             logs.update(lr = keras.backend.eval(self.model.optimizer.lr))
         except AttributeError:
@@ -21,11 +22,10 @@ class MyTensorBoard(keras.callbacks.TensorBoard):
 
 
 class MyModelCheckpoint(keras.callbacks.ModelCheckpoint):
-    def __init__(self, *args, **kwargs):
-        """ Initialize self. """
-        super(MyModelCheckpoint, self).__init__(*args, **kwargs)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
     
-    def on_epoch_end(self, epoch, logs = None):
+    def on_epoch_end(self, epoch: int, logs: dict = None) -> None:
         try:
             super().on_epoch_end(epoch = epoch, logs = logs)
         except OSError:
@@ -45,16 +45,22 @@ def train(epochs: int) -> None:
                                 update_freq = 'batch')
     csvLogger = keras.callbacks.CSVLogger(filename = LOG_FILE_PATH,
                                           append = True)
-    checkpoint = MyModelCheckpoint(filepath = MODEL_FMT_STR,
-                                   monitor = 'val_acc',
-                                   verbose = 1)
-    checkpointLatest = MyModelCheckpoint(filepath = LATEST_MODEL_PATH,
-                                         monitor = 'val_acc',
-                                         verbose = 1)
+    modelCheckpointEpoch = MyModelCheckpoint(filepath = MODEL_FMT_STR,
+                                             monitor = 'val_acc',
+                                             verbose = 1)
+    modelCheckpointLatest = MyModelCheckpoint(filepath = LATEST_MODEL_PATH,
+                                              monitor = 'val_acc',
+                                              verbose = 1)
     terminateOnNaN = keras.callbacks.TerminateOnNaN()
     earlyStopping = keras.callbacks.EarlyStopping(monitor = 'val_loss',
                                                   patience = 5,
                                                   verbose = 1)
+    
+    callbacks: List[keras.callbacks.Callback] = [
+        tensorBoard, csvLogger,
+        modelCheckpointEpoch, modelCheckpointLatest,
+        terminateOnNaN, earlyStopping
+    ]
     
     try:
         model_paths: List[str] = get_model_paths(sort_by = 'epoch', reverse = False)
@@ -73,7 +79,7 @@ def train(epochs: int) -> None:
         model.fit_generator(generator = train_data,
                             epochs = epochs, initial_epoch = initial_epoch,
                             validation_data = validation_data, shuffle = True,
-                            callbacks = [tensorBoard, csvLogger, checkpoint, checkpointLatest, terminateOnNaN, earlyStopping],
+                            callbacks = callbacks,
                             workers = WORKERS, use_multiprocessing = True)
     except KeyboardInterrupt:
         pass

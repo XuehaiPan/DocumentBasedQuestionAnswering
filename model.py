@@ -3,7 +3,7 @@ from typing import List
 from glob import glob
 import keras
 from config import VEC_SIZE, MAX_QUERY_WC, BIN_NUM, \
-    DROPOUT_RATE, INITIAL_LR, INITIAL_DECAY, REGULARIZATION_PARAM, \
+    INITIAL_LR, INITIAL_DECAY, REGULARIZATION_PARAM, \
     MODEL_DIR, LATEST_MODEL_PATH, MODEL_FILE_PATTERN, FIGURE_DIR
 
 
@@ -38,13 +38,11 @@ def build_network(model_path: str = None) -> keras.Model:
     hidden_layer = bin_sum
     hidden_layer_sizes: List[int] = [128, 64, 32, 16, 1]
     for i, units in enumerate(hidden_layer_sizes, start = 1):
-        Dropout_i = keras.layers.Dropout(rate = DROPOUT_RATE, name = f'Dropout_{i}')
         Dense_i = keras.layers.Dense(units = units, activation = None, use_bias = True,
                                      kernel_regularizer = keras.regularizers.l2(l = REGULARIZATION_PARAM),
                                      name = f'Dense_{i}')
         BatchNorm_i = keras.layers.BatchNormalization(name = f'BatchNorm_{i}')
         ReLU_i = keras.layers.ReLU(name = f'ReLU_{i}')
-        hidden_layer = Dropout_i(hidden_layer)
         hidden_layer = Dense_i(hidden_layer)  # shape == [batch_size, MAX_QUERY_WC, units]
         hidden_layer = BatchNorm_i(hidden_layer)  # shape == [batch_size, MAX_QUERY_WC, units]
         hidden_layer = ReLU_i(hidden_layer)  # shape == [batch_size, MAX_QUERY_WC, units]
