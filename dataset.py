@@ -68,7 +68,10 @@ def cut_sentence(sentence: str) -> List[str]:
     return list(tokenizer.cut(sentence = sentence, cut_all = False, HMM = True))
 
 
-from word2vec import get_vectors
+try:
+    from word2vec import get_vectors
+except ImportError:
+    get_vectors = None
 
 
 def get_normalized_vectors(word_list: List[str], epsilon: float = 1E-12) -> List[np.ndarray]:
