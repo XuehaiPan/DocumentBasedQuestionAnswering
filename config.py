@@ -45,9 +45,6 @@ DATA_FILE_PATH: Dict[str, str] = {
     for name in ('train', 'validation', 'test')
 }
 
-# test data not given yet
-del DATA_FILE_PATH['test']
-
 FIGURE_DIR: str = os.path.join('.', 'figures')
 MODEL_DIR: str = os.path.join('.', 'models')
 LOG_DIR: str = os.path.join('.', 'logs')

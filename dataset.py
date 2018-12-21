@@ -23,11 +23,9 @@ def data_tuple_generator(dataset: str) -> Tuple[str, str, int]:
             try:
                 query, doc, label = split
                 yield query, doc, int(label)
-            except ValueError:  # assert len(split) == 3
-                raise ValueError('Invalid data format.\n'
-                                 f'  File \"{DATA_FILE_PATH[dataset]}\", line {i}\n'
-                                 f'     original: \"{line}\"\n'
-                                 f'     split: {split}\n')
+            except ValueError:
+                query, doc = split
+                yield query, doc, None
 
 
 def query_doc_label_generator(dataset: str) -> Tuple[str, List[str], List[int]]:
@@ -166,12 +164,12 @@ class DataSequence(keras.utils.Sequence):
 
 
 def draw_data_distribution() -> None:
-    import numpy as np
     import matplotlib.pyplot as plt
     import seaborn as sns
     
     color = plt.rcParamsDefault['axes.prop_cycle']
-    color = iter(map(lambda c: c['color'], color))
+    color = list(map(lambda c: c['color'], color)) * 5
+    color = iter(color)
     
     def get_seq_len(dataset: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         query_wc_list: List[int] = []
@@ -197,11 +195,9 @@ def draw_data_distribution() -> None:
               f'    dataset: {dataset},\n'
               f'    \n'
               f'    longest_query: \'{longest_query}\',\n'
-              f'    cut_longest_query: {cut_sentence(sentence = longest_query)},\n'
               f'    max_query_word_count: {max_query_wc},\n'
               f'    \n'
               f'    longest_doc: \'{longest_doc}\',\n'
-              f'    cut_longest_doc: {cut_sentence(sentence = longest_doc)},\n'
               f'    query_of_longest_doc: \'{longest_doc_query}\',\n'
               f'    max_doc_word_count: {max_doc_wc}\n'
               f'}}\n')
@@ -211,14 +207,14 @@ def draw_data_distribution() -> None:
     def plot_dist(dataset: str,
                   query_wc: np.ndarray, doc_wc: np.ndarray, doc_cnt: np.ndarray,
                   query_ax: plt.Axes, doc_ax: plt.Axes, doc_cnt_ax: plt.Axes) -> None:
-        assert np.quantile(doc_wc, q = 0.99) <= MAX_DOC_WC
-        sns.distplot(query_wc, bins = query_wc.max(), color = next(color),
+        sns.distplot(query_wc[query_wc <= MAX_QUERY_WC], bins = MAX_QUERY_WC, color = next(color),
                      kde = True, kde_kws = {'label': 'kernel density estimation'},
                      label = 'data', ax = query_ax)
-        sns.distplot(doc_wc[doc_wc <= MAX_DOC_WC], color = next(color),
+        sns.distplot(doc_wc[doc_wc <= MAX_DOC_WC], bins = MAX_DOC_WC, color = next(color),
                      kde = True, kde_kws = {'label': 'kernel density estimation'},
                      label = 'data', ax = doc_ax)
-        sns.distplot(doc_cnt, color = next(color), kde = False, bins = doc_cnt.max(),
+        sns.distplot(doc_cnt, bins = doc_cnt.max(), color = next(color),
+                     kde = True, kde_kws = {'alpha': 0},
                      label = 'data', ax = doc_cnt_ax)
         for q in (0.25, 0.50, 0.75):
             query_ax.axvline(x = np.quantile(query_wc, q = q),
@@ -231,18 +227,18 @@ def draw_data_distribution() -> None:
         query_ax.set_title(label = f'Query Length ({dataset})')
         doc_ax.set_title(label = f'Doc Length ({dataset})')
         doc_cnt_ax.set_title(label = f'Doc Count Per Query ({dataset})')
-        for ax in (query_ax, doc_ax):
+        for ax in (query_ax, doc_ax, doc_cnt_ax):
             ax.set_xlabel(xlabel = 'Word Count')
             ax.set_ylabel(ylabel = 'Relative Frequency')
             ax.legend()
         doc_cnt_ax.set_xlabel(xlabel = 'Doc Count')
-        doc_cnt_ax.set_ylabel(ylabel = 'Query Num')
     
     fig: plt.Figure
     axes: Dict[Tuple[int, int], plt.Axes]
-    fig, axes = plt.subplots(nrows = 3, ncols = 3, figsize = (18, 18), dpi = 250)
+    fig, axes = plt.subplots(nrows = 4, ncols = 3, figsize = (18, 18), dpi = 250)
     train_query_wc, train_doc_wc, train_doc_cnt = get_seq_len(dataset = 'train')
     valid_query_wc, valid_doc_wc, valid_doc_cnt = get_seq_len(dataset = 'validation')
+    test_query_wc, test_doc_wc, test_doc_cnt = get_seq_len(dataset = 'test')
     
     plot_dist(dataset = 'train',
               query_wc = train_query_wc, doc_wc = train_doc_wc, doc_cnt = train_doc_cnt,
@@ -252,13 +248,17 @@ def draw_data_distribution() -> None:
               query_wc = valid_query_wc, doc_wc = valid_doc_wc, doc_cnt = valid_doc_cnt,
               query_ax = axes[1, 0], doc_ax = axes[1, 1], doc_cnt_ax = axes[1, 2])
     
-    all_query_wc: np.ndarray = np.concatenate([train_query_wc, valid_query_wc])
-    all_doc_wc: np.ndarray = np.concatenate([train_doc_wc, valid_doc_wc])
-    all_doc_cnt: np.ndarray = np.concatenate([train_doc_cnt, valid_doc_cnt])
+    plot_dist(dataset = 'test',
+              query_wc = test_query_wc, doc_wc = test_doc_wc, doc_cnt = test_doc_cnt,
+              query_ax = axes[2, 0], doc_ax = axes[2, 1], doc_cnt_ax = axes[2, 2])
+    
+    all_query_wc: np.ndarray = np.concatenate([train_query_wc, valid_query_wc, test_query_wc])
+    all_doc_wc: np.ndarray = np.concatenate([train_doc_wc, valid_doc_wc, test_doc_wc])
+    all_doc_cnt: np.ndarray = np.concatenate([train_doc_cnt, valid_doc_cnt, test_doc_cnt])
     
     plot_dist(dataset = 'all',
               query_wc = all_query_wc, doc_wc = all_doc_wc, doc_cnt = all_doc_cnt,
-              query_ax = axes[2, 0], doc_ax = axes[2, 1], doc_cnt_ax = axes[2, 2])
+              query_ax = axes[3, 0], doc_ax = axes[3, 1], doc_cnt_ax = axes[3, 2])
     
     fig.tight_layout()
     fig.savefig(fname = os.path.join(FIGURE_DIR, 'data_dist.png'))
