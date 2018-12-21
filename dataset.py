@@ -1,5 +1,5 @@
 import os
-from typing import List, Tuple, Dict, Iterator
+from typing import List, Tuple, Dict, Iterator, Union
 import numpy as np
 import keras
 from jieba import Tokenizer
@@ -88,21 +88,25 @@ def sent2vec(word_list: List[str], max_wc: int) -> np.ndarray:
 
 
 class DataSequence(keras.utils.Sequence):
-    def __init__(self, dataset: str, batch_size: int, data_augmentation: bool = False) -> None:
+    def __init__(self, dataset: str, batch_size: int,
+                 data_augmentation: bool = False, return_target = True) -> None:
         """ Initialize self. """
         super(DataSequence, self).__init__()
         self.dataset: str = dataset
         self.batch_size: int = batch_size
+        self.data_augmentation: bool = data_augmentation
+        self.return_target: bool = return_target
+        
         self.queries: List[List[str]] = []
         self.doc_lists: List[List[List[str]]] = []
         self.label_lists: List[List[int]] = []
         for query, doc_list, label_list in query_doc_label_generator(dataset = dataset):
             split_doc_list: List[List[str]] = list(map(cut_sentence, doc_list))
             
-            if data_augmentation:
+            if self.data_augmentation:
                 n_doc: int = len(label_list)
                 n_pos_doc: int = label_list.count(POSITIVE)
-                n_neg_doc: int = n_doc - n_pos_doc
+                n_neg_doc: int = label_list.count(NEGATIVE)
                 try:
                     factor: int = n_neg_doc // n_pos_doc - 1
                 except ZeroDivisionError:
@@ -117,23 +121,9 @@ class DataSequence(keras.utils.Sequence):
             self.doc_lists.append(split_doc_list)
             self.label_lists.append(label_list)
         
-        n_query: int = len(self.queries)
-        n_doc: int = sum(map(len, self.label_lists))
-        n_pos_doc: int = sum(label_list.count(POSITIVE) for label_list in self.label_lists)
-        n_neg_doc: int = n_doc - n_pos_doc
-        print(f'{{\n'
-              f'    dataset: {dataset},\n'
-              f'    query_num: {n_query},\n'
-              f'    doc_num: {n_doc},\n'
-              f'    positive_doc_num: {n_pos_doc},\n'
-              f'    negative_doc_num: {n_neg_doc},\n'
-              f'    average_doc_count_per_query: {n_doc / n_query:.2f},\n'
-              f'    average_positive_doc_num_per_query: {n_pos_doc / n_query:.2f},\n'
-              f'    average_negative_doc_num_per_query: {n_neg_doc / n_query:.2f},\n'
-              f'    use_data_augmentation: {data_augmentation}\n'
-              f'}}')
+        self.show_dataset_info()
     
-    def __getitem__(self, index: int) -> Tuple[List[np.ndarray], np.ndarray]:
+    def __getitem__(self, index: int) -> Union[Tuple[List[np.ndarray], np.ndarray], List[np.ndarray]]:
         queries: List[List[str]] = self.queries[index * self.batch_size:(index + 1) * self.batch_size]
         doc_lists: List[List[List[str]]] = self.doc_lists[index * self.batch_size:(index + 1) * self.batch_size]
         label_lists: List[List[int]] = self.label_lists[index * self.batch_size:(index + 1) * self.batch_size]
@@ -141,7 +131,6 @@ class DataSequence(keras.utils.Sequence):
         n_sample: int = sum(map(len, label_lists))
         embedded_queries: np.ndarray = np.zeros(shape = (n_sample, MAX_QUERY_WC, VEC_SIZE), dtype = np.float32)
         bin_sum: np.ndarray = np.zeros(shape = (n_sample, MAX_QUERY_WC, BIN_NUM), dtype = np.float32)
-        labels: np.ndarray = np.zeros(shape = (n_sample,), dtype = np.float32)
         
         s: int = 0
         for query, doc_list, label_list in zip(queries, doc_lists, label_lists):
@@ -154,13 +143,33 @@ class DataSequence(keras.utils.Sequence):
                         val: float = qa_matrix[i, j]
                         k: int = int((val + 1) * (BIN_NUM - 1) / 2)
                         bin_sum[s, i, k] += qa_matrix[i, j]
-                labels[s] = label
                 s += 1
         
-        return [embedded_queries, bin_sum], labels
+        if self.return_target:
+            labels: np.ndarray = np.concatenate(label_lists).astype(dtype = np.float32)
+            return [embedded_queries, bin_sum], labels
+        else:
+            return [embedded_queries, bin_sum]
     
     def __len__(self) -> int:
         return int(np.ceil(len(self.label_lists) / float(self.batch_size)))
+    
+    def show_dataset_info(self):
+        n_query: int = len(self.queries)
+        n_doc: int = sum(map(len, self.label_lists))
+        n_pos_doc: int = sum(label_list.count(POSITIVE) for label_list in self.label_lists)
+        n_neg_doc: int = sum(label_list.count(NEGATIVE) for label_list in self.label_lists)
+        print(f'{{\n'
+              f'    dataset: {self.dataset},\n'
+              f'    query_num: {n_query},\n'
+              f'    doc_num: {n_doc},\n'
+              f'    positive_doc_num: {n_pos_doc},\n'
+              f'    negative_doc_num: {n_neg_doc},\n'
+              f'    average_doc_count_per_query: {n_doc / n_query:.2f},\n'
+              f'    average_positive_doc_num_per_query: {n_pos_doc / n_query:.2f},\n'
+              f'    average_negative_doc_num_per_query: {n_neg_doc / n_query:.2f},\n'
+              f'    use_data_augmentation: {self.data_augmentation}\n'
+              f'}}')
 
 
 def draw_data_distribution() -> None:
@@ -207,15 +216,15 @@ def draw_data_distribution() -> None:
     def plot_dist(dataset: str,
                   query_wc: np.ndarray, doc_wc: np.ndarray, doc_cnt: np.ndarray,
                   query_ax: plt.Axes, doc_ax: plt.Axes, doc_cnt_ax: plt.Axes) -> None:
-        sns.distplot(query_wc[query_wc <= MAX_QUERY_WC], bins = MAX_QUERY_WC, color = next(color),
+        sns.distplot(query_wc[query_wc <= MAX_QUERY_WC], bins = min(query_wc.max(), MAX_QUERY_WC),
                      kde = True, kde_kws = {'label': 'kernel density estimation'},
-                     label = 'data', ax = query_ax)
-        sns.distplot(doc_wc[doc_wc <= MAX_DOC_WC], bins = MAX_DOC_WC, color = next(color),
+                     color = next(color), label = 'data', ax = query_ax)
+        sns.distplot(doc_wc[doc_wc <= MAX_DOC_WC], bins = MAX_DOC_WC,
                      kde = True, kde_kws = {'label': 'kernel density estimation'},
-                     label = 'data', ax = doc_ax)
-        sns.distplot(doc_cnt, bins = doc_cnt.max(), color = next(color),
+                     color = next(color), label = 'data', ax = doc_ax)
+        sns.distplot(doc_cnt, bins = doc_cnt.max(),
                      kde = True, kde_kws = {'alpha': 0},
-                     label = 'data', ax = doc_cnt_ax)
+                     color = next(color), label = 'data', ax = doc_cnt_ax)
         for q in (0.25, 0.50, 0.75):
             query_ax.axvline(x = np.quantile(query_wc, q = q),
                              linestyle = '-.', color = 'black', alpha = 0.5)

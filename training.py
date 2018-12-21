@@ -33,8 +33,10 @@ class MyModelCheckpoint(keras.callbacks.ModelCheckpoint):
 
 
 def train(epochs: int) -> None:
-    train_data = DataSequence(dataset = 'train', batch_size = BATCH_SIZE, data_augmentation = True)
-    validation_data = DataSequence(dataset = 'validation', batch_size = BATCH_SIZE, data_augmentation = False)
+    train_data = DataSequence(dataset = 'train', batch_size = BATCH_SIZE,
+                              data_augmentation = True, return_target = True)
+    validation_data = DataSequence(dataset = 'validation', batch_size = BATCH_SIZE,
+                                   data_augmentation = False, return_target = True)
     
     tensorBoard = MyTensorBoard(log_dir = LOG_DIR,
                                 histogram_freq = 0,
@@ -52,14 +54,11 @@ def train(epochs: int) -> None:
                                               monitor = 'val_acc',
                                               verbose = 1)
     terminateOnNaN = keras.callbacks.TerminateOnNaN()
-    earlyStopping = keras.callbacks.EarlyStopping(monitor = 'val_loss',
-                                                  patience = 5,
-                                                  verbose = 1)
     
     callbacks: List[keras.callbacks.Callback] = [
         tensorBoard, csvLogger,
         modelCheckpointEpoch, modelCheckpointLatest,
-        terminateOnNaN, earlyStopping
+        terminateOnNaN
     ]
     
     try:
