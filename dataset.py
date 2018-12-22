@@ -123,7 +123,7 @@ class DataSequence(keras.utils.Sequence):
         
         s: int = 0
         for query, doc_list, label_list in zip(queries, doc_lists, label_lists):
-            embedded_query: List[np.ndarray] = sent2vec(word_list = query, max_wc = MAX_QUERY_WC)
+            embedded_query: np.ndarray = sent2vec(word_list = query, max_wc = MAX_QUERY_WC)
             for doc, label in zip(doc_list, label_list):
                 embedded_doc: np.ndarray = sent2vec(word_list = doc, max_wc = MAX_DOC_WC)
                 qa_matrix: np.ndarray = np.tensordot(embedded_query, embedded_doc, axes = (-1, -1))
