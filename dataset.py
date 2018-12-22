@@ -40,8 +40,8 @@ def query_doc_label_generator(dataset: str) -> Tuple[str, List[str], List[int]]:
             if cur_query is not None:
                 yield cur_query, doc_list, label_list
             cur_query = query
-            doc_list = []
-            label_list = []
+            doc_list = [doc]
+            label_list = [label]
     if cur_query is not None:
         yield cur_query, doc_list, label_list
 
