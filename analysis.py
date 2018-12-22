@@ -14,7 +14,7 @@ model_list=['epoch01_acc0.7526.h5','epoch02_acc0.8323.h5','epoch03_acc0.8398.h5'
 			'epoch10_acc0.7887.h5']
 
 def predict_test(idx:int,model,x):
-	f_ans = open(DATA_FILE_PATH+str(idx)+'.txt','w')
+	f_ans = open(DATA_FILE_PATH+'./test_score'+str(idx)+'.txt','w')
 	predictions: np.ndarray = model.predict_generator(x, max_q_size=10, workers=1, pickle_safe=False, verbose=0)
 	print(predictions.shape)
 	for i in predictions:
@@ -23,7 +23,7 @@ def predict_test(idx:int,model,x):
 	f_ans.close()
 
 def predict_valid(idx:int,model,x):
-	f_ans = open(DATA_FILE_PATH+str(idx)+'.txt','w')
+	f_ans = open(DATA_FILE_PATH+'./test_score'+str(idx)+'.txt','w')
 	predictions: np.ndarray = model.predict_generator(x, max_q_size=10, workers=1, pickle_safe=False, verbose=0)
 	for i in predictions:
 		for j in i:
