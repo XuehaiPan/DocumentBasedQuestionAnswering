@@ -40,8 +40,8 @@ def query_doc_label_generator(dataset: str) -> Tuple[str, List[str], List[int]]:
             if cur_query is not None:
                 yield cur_query, doc_list, label_list
             cur_query = query
-            doc_list = []
-            label_list = []
+            doc_list = [doc]
+            label_list = [label]
     if cur_query is not None:
         yield cur_query, doc_list, label_list
 
@@ -68,7 +68,10 @@ def cut_sentence(sentence: str) -> List[str]:
     return list(tokenizer.cut(sentence = sentence, cut_all = False, HMM = True))
 
 
-from word2vec import get_vectors
+try:
+    from word2vec import get_vectors
+except ImportError:
+    get_vectors = None
 
 
 def get_normalized_vectors(word_list: List[str], epsilon: float = 1E-12) -> List[np.ndarray]:
@@ -89,37 +92,23 @@ def sent2vec(word_list: List[str], max_wc: int) -> np.ndarray:
 
 class DataSequence(keras.utils.Sequence):
     def __init__(self, dataset: str, batch_size: int,
-                 data_augmentation: bool = False, return_target = True) -> None:
-        """ Initialize self. """
-        super(DataSequence, self).__init__()
+                 data_augmentation: bool = False, return_target: bool = True) -> None:
+        super().__init__()
         self.dataset: str = dataset
         self.batch_size: int = batch_size
-        self.data_augmentation: bool = data_augmentation
+        self.data_augmentation: bool = False
         self.return_target: bool = return_target
         
         self.queries: List[List[str]] = []
         self.doc_lists: List[List[List[str]]] = []
         self.label_lists: List[List[int]] = []
         for query, doc_list, label_list in query_doc_label_generator(dataset = dataset):
-            split_doc_list: List[List[str]] = list(map(cut_sentence, doc_list))
-            
-            if self.data_augmentation:
-                n_doc: int = len(label_list)
-                n_pos_doc: int = label_list.count(POSITIVE)
-                n_neg_doc: int = label_list.count(NEGATIVE)
-                try:
-                    factor: int = n_neg_doc // n_pos_doc - 1
-                except ZeroDivisionError:
-                    pass
-                else:
-                    for i in range(n_doc):
-                        if label_list[i] == POSITIVE:
-                            split_doc_list.extend([split_doc_list[i]] * factor)
-                            label_list.extend([POSITIVE] * factor)
-            
             self.queries.append(cut_sentence(sentence = query))
-            self.doc_lists.append(split_doc_list)
+            self.doc_lists.append(list(map(cut_sentence, doc_list)))
             self.label_lists.append(label_list)
+        
+        if data_augmentation:
+            self.do_data_augmentation()
         
         self.show_dataset_info()
     
@@ -134,7 +123,7 @@ class DataSequence(keras.utils.Sequence):
         
         s: int = 0
         for query, doc_list, label_list in zip(queries, doc_lists, label_lists):
-            embedded_query: List[np.ndarray] = sent2vec(word_list = query, max_wc = MAX_QUERY_WC)
+            embedded_query: np.ndarray = sent2vec(word_list = query, max_wc = MAX_QUERY_WC)
             for doc, label in zip(doc_list, label_list):
                 embedded_doc: np.ndarray = sent2vec(word_list = doc, max_wc = MAX_DOC_WC)
                 qa_matrix: np.ndarray = np.tensordot(embedded_query, embedded_doc, axes = (-1, -1))
@@ -154,7 +143,24 @@ class DataSequence(keras.utils.Sequence):
     def __len__(self) -> int:
         return int(np.ceil(len(self.label_lists) / float(self.batch_size)))
     
-    def show_dataset_info(self):
+    def do_data_augmentation(self) -> None:
+        if not self.data_augmentation:
+            for doc_list, label_list in zip(self.doc_lists, self.label_lists):
+                n_doc: int = len(label_list)
+                n_pos_doc: int = label_list.count(POSITIVE)
+                n_neg_doc: int = label_list.count(NEGATIVE)
+                try:
+                    factor: int = n_neg_doc // n_pos_doc - 1
+                except ZeroDivisionError:
+                    pass
+                else:
+                    for i in range(n_doc):
+                        if label_list[i] == POSITIVE:
+                            doc_list.extend([doc_list[i]] * factor)
+                            label_list.extend([POSITIVE] * factor)
+        self.data_augmentation = True
+    
+    def show_dataset_info(self) -> None:
         n_query: int = len(self.queries)
         n_doc: int = sum(map(len, self.label_lists))
         n_pos_doc: int = sum(label_list.count(POSITIVE) for label_list in self.label_lists)
