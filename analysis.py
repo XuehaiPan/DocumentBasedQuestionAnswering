@@ -14,7 +14,8 @@ model_list=['epoch01_acc0.7526.h5','epoch02_acc0.8323.h5','epoch03_acc0.8398.h5'
 			'epoch10_acc0.7887.h5']
 
 def predict_test(idx:int,model,x):
-	f_ans = open(DATA_FILE_PATH+'test_score'+str(idx)+'.txt','w')
+	strtemp='test_score'+str(idx)+'.txt'
+	f_ans = open(os.path.join(DATA_FILE_PATH, strtemp)+,'w')
 	predictions: np.ndarray = model.predict_generator(x, max_q_size=10, workers=1, pickle_safe=False, verbose=0)
 	print(predictions.shape)
 	for i in predictions:
@@ -23,7 +24,8 @@ def predict_test(idx:int,model,x):
 	f_ans.close()
 
 def predict_valid(idx:int,model,x):
-	f_ans = open(DATA_FILE_PATH+'valid_score'+str(idx)+'.txt','w')
+	strtemp='valid_score'+str(idx)+'.txt'
+	f_ans = open(os.path.join(DATA_FILE_PATH, strtemp)+,'w')
 	predictions: np.ndarray = model.predict_generator(x, max_q_size=10, workers=1, pickle_safe=False, verbose=0)
 	for i in predictions:
 		for j in i:
@@ -44,7 +46,7 @@ x_valid = DataSequence(dataset = 'validation', batch_size = BATCH_SIZE, data_aug
 # x_ = DataSequence(dataset = 'validation', batch_size = BATCH_SIZE, data_augmentation = False, return_target = False)
 
 for file_path in model_list:
-	model = load_model(MODEL_DIR+file_path)
+	model = load_model(os.path.join(MODEL_DIR, file_path))
 	print('for load model '+str(cnt))	
 	print('test predict...')
 	predict_test(cnt,model,x_test)
