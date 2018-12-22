@@ -96,7 +96,7 @@ class DataSequence(keras.utils.Sequence):
         super().__init__()
         self.dataset: str = dataset
         self.batch_size: int = batch_size
-        self.data_augmentation: bool = data_augmentation
+        self.data_augmentation: bool = False
         self.return_target: bool = return_target
         
         self.queries: List[List[str]] = []
@@ -107,7 +107,7 @@ class DataSequence(keras.utils.Sequence):
             self.doc_lists.append(list(map(cut_sentence, doc_list)))
             self.label_lists.append(label_list)
         
-        if self.data_augmentation:
+        if data_augmentation:
             self.do_data_augmentation()
         
         self.show_dataset_info()
@@ -144,19 +144,21 @@ class DataSequence(keras.utils.Sequence):
         return int(np.ceil(len(self.label_lists) / float(self.batch_size)))
     
     def do_data_augmentation(self) -> None:
-        for doc_list, label_list in zip(self.doc_lists, self.label_lists):
-            n_doc: int = len(label_list)
-            n_pos_doc: int = label_list.count(POSITIVE)
-            n_neg_doc: int = label_list.count(NEGATIVE)
-            try:
-                factor: int = n_neg_doc // n_pos_doc - 1
-            except ZeroDivisionError:
-                pass
-            else:
-                for i in range(n_doc):
-                    if label_list[i] == POSITIVE:
-                        doc_list.extend([doc_list[i]] * factor)
-                        label_list.extend([POSITIVE] * factor)
+        if not self.data_augmentation:
+            for doc_list, label_list in zip(self.doc_lists, self.label_lists):
+                n_doc: int = len(label_list)
+                n_pos_doc: int = label_list.count(POSITIVE)
+                n_neg_doc: int = label_list.count(NEGATIVE)
+                try:
+                    factor: int = n_neg_doc // n_pos_doc - 1
+                except ZeroDivisionError:
+                    pass
+                else:
+                    for i in range(n_doc):
+                        if label_list[i] == POSITIVE:
+                            doc_list.extend([doc_list[i]] * factor)
+                            label_list.extend([POSITIVE] * factor)
+        self.data_augmentation = True
     
     def show_dataset_info(self) -> None:
         n_query: int = len(self.queries)
