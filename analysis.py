@@ -24,6 +24,7 @@ def predict() -> None:
     model_paths: List[str] = get_model_paths(sort_by = 'epoch', reverse = False)
     
     for epoch, model_path in enumerate(model_paths, start = 1):
+        print(f'load model f{model_path}')
         model: keras.Model = build_network(model_path = model_path)
         validation_file: str = os.path.join(DATA_DIR, f'validation_score_epoch{epoch}.txt')
         test_file: str = os.path.join(DATA_DIR, f'test_score_epoch{epoch}.txt')
