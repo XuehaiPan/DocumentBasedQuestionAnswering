@@ -1,6 +1,7 @@
 # 基于文档的自动问答系统
 <center>潘学海 1500011317<br>杨纪翔 1500011342<br>杜尚宸 1600012782<br>曾 皓 1600012955</center>
 
+---
 <!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 orderedList=false} -->
 
 <!-- code_chunk_output -->
