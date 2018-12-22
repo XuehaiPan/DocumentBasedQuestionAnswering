@@ -225,7 +225,7 @@ def draw_data_distribution() -> None:
         sns.distplot(query_wc[query_wc <= MAX_QUERY_WC], bins = min(query_wc.max(), MAX_QUERY_WC),
                      kde = True, kde_kws = {'label': 'kernel density estimation'},
                      color = next(color), label = 'data', ax = query_ax)
-        sns.distplot(doc_wc[doc_wc <= MAX_DOC_WC], bins = MAX_DOC_WC,
+        sns.distplot(doc_wc[doc_wc <= MAX_DOC_WC], bins = MAX_DOC_WC // 2,
                      kde = True, kde_kws = {'label': 'kernel density estimation'},
                      color = next(color), label = 'data', ax = doc_ax)
         sns.distplot(doc_cnt, bins = doc_cnt.max(),
@@ -238,7 +238,7 @@ def draw_data_distribution() -> None:
                            linestyle = '-.', color = 'black', alpha = 0.5)
         query_ax.set_xlim(left = 0)
         doc_ax.set_xlim(left = 0, right = MAX_DOC_WC)
-        doc_cnt_ax.set_xlim(left = 0)
+        doc_cnt_ax.set_xlim(left = 0, right = doc_cnt.max() + 1)
         query_ax.set_title(label = f'Query Length ({dataset})')
         doc_ax.set_title(label = f'Doc Length ({dataset})')
         doc_cnt_ax.set_title(label = f'Doc Count Per Query ({dataset})')

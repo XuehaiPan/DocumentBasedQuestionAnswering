@@ -14,11 +14,12 @@ class MyTensorBoard(keras.callbacks.TensorBoard):
     def on_epoch_end(self, epoch: int, logs: dict = None) -> None:
         # log learning rate
         logs = logs or {}
+        logs = logs.copy()
         try:
             logs.update(lr = keras.backend.eval(self.model.optimizer.lr))
         except AttributeError:
             pass
-        super().on_epoch_end(epoch, logs)
+        super().on_epoch_end(epoch = epoch, logs = logs)
 
 
 class MyModelCheckpoint(keras.callbacks.ModelCheckpoint):
