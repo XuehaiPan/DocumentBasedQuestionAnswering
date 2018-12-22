@@ -23,7 +23,7 @@ def predict_test(idx:int,model,x):
 	f_ans.close()
 
 def predict_valid(idx:int,model,x):
-	f_ans = open(DATA_FILE_PATH+'./test_score'+str(idx)+'.txt','w')
+	f_ans = open(DATA_FILE_PATH+'./valid_score'+str(idx)+'.txt','w')
 	predictions: np.ndarray = model.predict_generator(x, max_q_size=10, workers=1, pickle_safe=False, verbose=0)
 	for i in predictions:
 		for j in i:
