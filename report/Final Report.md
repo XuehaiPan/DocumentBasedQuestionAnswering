@@ -11,6 +11,7 @@
 		* [问题-回答匹配矩阵(QA Matching Matrix)](#问题-回答匹配矩阵qa-matching-matrix)
 		* [价值共享的权重(Value-shared Weight)](#价值共享的权重value-shared-weight)
 		* [问题注意力网络(Question Attention Network)](#问题注意力网络question-attention-network)
+	* [代码实现](#代码实现)
 	* [训练结果](#训练结果)
 	* [验证结果](#验证结果)
 	* [附录](#附录)
@@ -27,12 +28,13 @@
 内迪尔科参加欧洲冠军联赛的赛况如何？	欧洲冠军联赛：出场0次，进0球	1
 ```
 在进行建模之前，我们对数据进行了预处理，检查了问题和答案的长度分布，如下图所示（注：test集的数据是最后更新的，建模时未作参考，但不影响结果）。绝大多数的问题的长度在15个词以下，回答的长度在60词以下。为平衡训练的质量和效率，我们最后选择了问题的截断长度为40词，答案的截断长度为160词。此外，大多数问题有30条回答，我们猜测这是数据发布者人为选择的结果。
-![](../figures/data_dist.png)
+![Figure1](../figures/data_dist.png)
+<center>图1: 数据预处理</center>
 
 ## 模型概述
 对于Question Answering(QA)问题，除了传统的feature engineering，也可以使用深度学习方法进行实现。但使用卷积神经网络(CNN)或长短期记忆(LSTM)方法构建模型时，往往需要使用额外的特征进行辅助，否则效果会很不好。因此，在本课题中，我们参考相关文献[1]，实现了一个aNMM (attention-based Nerual Matching Model)模型，对问答结果进行分析。以下作简要介绍。
-![](../figures/aNMM-F1.png)
-<center>图1: aNMM模型网络结构[1]</center>
+![Figure2](../figures/aNMM-F1.png)
+<center>图2: aNMM模型网络结构[1]</center>
 
 ### 问题-回答匹配矩阵(QA Matching Matrix)
 
@@ -42,8 +44,8 @@ $$x_{jk}=\cos (<\vec q_j,\vec x_k>)=\frac{\vec q_j\cdot \vec x_k}{|\vec q_j|\cdo
 ### 价值共享的权重(Value-shared Weight)
 传统神经网络如CNN本身是为图像处理而设计的，因此它的主要特点是，每一个filter总是处理临近的若干数据点，因此原数据集中相邻位置的点会共享相同的网络权重(position-shared weight)。
 而在自然语言中，由于语法句式的复杂多样，重要信息可以出现在句子的每一个位置，基于位置的filter很难提取特征。因此我们给价值相似的词赋予相同的权重连入网络(value-shared weight)，会有更好的结果。这里的价值就是在上面定义的问题词和答案词之间的相似度。即$$h_j=\delta(\sum_{k=0}^{K}w_k\cdot x_{jk})$$这里$h_j$表示第$j$个节点的输出，采用`sigmoid`激活函数，$w_k$表示第$k$个价值区间对应的权重。每一个价值区间，如下图中的$[0,0.5)$、$[0.5,1)$和${1}$，分别称为一个容器(bin)。
-![](../figures/aNMM-F2.png)
-<center>图2: 位置共享权重(CNN)和价值共享权重(aNMM)的比较[1]</center>
+![Figure3](../figures/aNMM-F2.png)
+<center>图3: 位置共享权重(CNN)和价值共享权重(aNMM)的比较[1]</center>
 
 
 ### 问题注意力网络(Question Attention Network)
@@ -54,6 +56,13 @@ $$x_{jk}=\cos (<\vec q_j,\vec x_k>)=\frac{\vec q_j\cdot \vec x_k}{|\vec q_j|\cdo
 $$y=\sum_{j=1}^M{g_j\cdot h_j}=\sum_{j=1}^M{\frac{\exp(\bold{v}\cdot\bold{q_j})}{\sum_{l=1}^L\exp(\bold{v}\cdot\bold{q_l})}}\cdot h_j$$
 式中的$\bold{v}$是一个模型参量，通过训练达到最优化。
 
+## 代码实现
+对于数据我们首先进行分词处理，这一部分调用开源库`jieba`完成。然后我们对分词后的结果进行词向量构建，词向量维度为128，这一部分主要调用` gensim.models.Word2Vec`完成。
+之后可以构建QA Matching Matrix。根据相似度我们将$[-1,1]$区间分为201个bin。为了加快模型训练速度，并不把构建完的矩阵直接传入网络，而是首先进行预处理，将每行中属于不同bin的矩阵元分别求和，即bin_sum输入网络。
+输入的bin_sum会经过五层`Dense`+`LeakyReLU`全连接网络，每层的节点数逐次减少，最后一层输出值即为前述的$h_j$。这里最初还有`Dropout`层，但在实际训练过程中发现，引入`Dropout`层会使训练极不稳定，最终将其删去。
+另一方面，将问题中每个词的词向量通过一个`Dense`层（即上述模型参量$\bold v$），再通过`softmax`门函数，和对应网络输出进行点乘，最后通过`sigmoid`激活函数输出。
+具体网络模型如下图所示：
+![Figure4](../figures/model[reshape].png)
 ## 训练结果
 
 ## 验证结果
