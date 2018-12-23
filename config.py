@@ -48,8 +48,9 @@ DATA_FILE_PATH: Dict[str, str] = {
 FIGURE_DIR: str = os.path.join('.', 'figures')
 MODEL_DIR: str = os.path.join('.', 'models')
 LOG_DIR: str = os.path.join('.', 'logs')
+PREDICT_RESULTS_DIR: str = os.path.join('.', 'predict_results')
 
-for DIR in (FIGURE_DIR, MODEL_DIR, LOG_DIR):
+for DIR in (FIGURE_DIR, MODEL_DIR, LOG_DIR, PREDICT_RESULTS_DIR):
     os.makedirs(DIR, exist_ok = True)
 
 del DIR
