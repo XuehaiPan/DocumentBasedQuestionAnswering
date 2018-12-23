@@ -22,10 +22,10 @@ def load_predictions(filename: str) -> np.ndarray:
 
 
 def predict() -> None:
-    validation_data =  DataSequence(dataset = 'validation', batch_size = BATCH_SIZE,
-                                        data_augmentation = False, return_target = False)
+    validation_data = DataSequence(dataset = 'validation', batch_size = BATCH_SIZE,
+                                   data_augmentation = False, return_target = False)
     test_data = DataSequence(dataset = 'test', batch_size = BATCH_SIZE,
-                                  data_augmentation = False, return_target = False)
+                             data_augmentation = False, return_target = False)
     
     model_paths: List[str] = get_model_paths(sort_by = 'val_acc', reverse = True)
     top5_model_paths: Set[str] = set(model_paths[:5])
