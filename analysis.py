@@ -35,7 +35,7 @@ def predict() -> None:
     top5_test_predictions: List[np.ndarray] = []
     validation_predictions: np.ndarray = None
     test_predictions: np.ndarray = None
-    for epoch, model_path in enumerate(model_paths, start = 1):
+    for epoch, model_path in reversed(list(enumerate(model_paths, start = 1))):
         print(f'load model {model_path}')
         model: keras.Model = build_network(model_path = model_path)
         validation_file: str = os.path.join(DATA_DIR, f'validation_score_epoch{epoch}.txt')
@@ -59,6 +59,11 @@ def predict() -> None:
                 test_predictions = load_predictions(filename = validation_file)
             top5_validation_predictions.append(validation_predictions)
             top5_test_predictions.append(test_predictions)
+        else:
+            try:
+                os.remove(test_file)
+            except FileNotFoundError:
+                pass
     validation_predictions = np.mean(top5_validation_predictions, axis = 0)
     test_predictions = np.mean(top5_test_predictions, axis = 0)
     validation_file: str = os.path.join(DATA_DIR, f'validation_score_ensemble.txt')

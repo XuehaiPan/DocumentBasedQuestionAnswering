@@ -38,7 +38,7 @@ def draw_training_logs() -> None:
     axes[1].set_title(label = 'Loss')
     
     fig.tight_layout()
-    fig.savefig(fname = os.path.join(FIGURE_DIR, 'training_log.png'))
+    fig.savefig(fname = os.path.join(FIGURE_DIR, 'training_logs.png'))
     fig.show()
 
 

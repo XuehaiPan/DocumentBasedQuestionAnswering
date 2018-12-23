@@ -167,13 +167,13 @@ class DataSequence(keras.utils.Sequence):
         n_neg_doc: int = sum(label_list.count(NEGATIVE) for label_list in self.label_lists)
         print(f'{{\n'
               f'    dataset: {self.dataset},\n'
-              f'    query_num: {n_query},\n'
-              f'    doc_num: {n_doc},\n'
-              f'    positive_doc_num: {n_pos_doc},\n'
-              f'    negative_doc_num: {n_neg_doc},\n'
+              f'    query_count: {n_query},\n'
+              f'    doc_count: {n_doc},\n'
+              f'    positive_doc_count: {n_pos_doc},\n'
+              f'    negative_doc_count: {n_neg_doc},\n'
               f'    average_doc_count_per_query: {n_doc / n_query:.2f},\n'
-              f'    average_positive_doc_num_per_query: {n_pos_doc / n_query:.2f},\n'
-              f'    average_negative_doc_num_per_query: {n_neg_doc / n_query:.2f},\n'
+              f'    average_positive_doc_count_per_query: {n_pos_doc / n_query:.2f},\n'
+              f'    average_negative_doc_count_per_query: {n_neg_doc / n_query:.2f},\n'
               f'    use_data_augmentation: {self.data_augmentation}\n'
               f'}}')
 
