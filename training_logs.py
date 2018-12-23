@@ -11,16 +11,20 @@ from model import get_model_paths, build_network
 
 def draw_training_logs() -> None:
     logs: pd.DataFrame = pd.read_csv(LOG_FILE_PATH)
+    
     logs['epoch'] += 1
     
     print(logs)
     
+    color = plt.rcParamsDefault['axes.prop_cycle']
+    color = iter(map(lambda c: c['color'], color))
+    
     fig: plt.Figure
     axes: List[plt.Axes]
-    fig, axes = plt.subplots(nrows = 2, ncols = 1, figsize = (12, 12))
+    fig, axes = plt.subplots(nrows = 3, ncols = 1, figsize = (12, 18), dpi = 200)
     
-    axes[0].plot(logs['epoch'], logs['acc'], label = 'train')
-    axes[0].plot(logs['epoch'], logs['val_acc'], label = 'validation')
+    axes[0].plot(logs['epoch'], logs['acc'], label = 'train', color = next(color))
+    axes[0].plot(logs['epoch'], logs['val_acc'], label = 'validation', color = next(color))
     axes[0].legend()
     axes[0].set_xlim(left = 0)
     axes[0].set_xticks(ticks = list(range(0, logs['epoch'].max() + 1, 2)))
@@ -29,8 +33,8 @@ def draw_training_logs() -> None:
     axes[0].set_ylabel(ylabel = 'accuracy')
     axes[0].set_title(label = 'Accuracy')
     
-    axes[1].plot(logs['epoch'], logs['loss'], label = 'train')
-    axes[1].plot(logs['epoch'], logs['val_loss'], label = 'validation')
+    axes[1].plot(logs['epoch'], logs['loss'], label = 'train', color = next(color))
+    axes[1].plot(logs['epoch'], logs['val_loss'], label = 'validation', color = next(color))
     axes[1].legend()
     axes[1].set_xlim(left = 0)
     axes[1].set_xticks(ticks = list(range(0, logs['epoch'].max() + 1, 2)))
@@ -38,6 +42,16 @@ def draw_training_logs() -> None:
     axes[1].set_xlabel(xlabel = 'epoch')
     axes[1].set_ylabel(ylabel = 'loss')
     axes[1].set_title(label = 'Loss')
+    
+    axes[2].plot(logs['epoch'], logs['MAP'], label = 'MAP', color = next(color))
+    axes[2].plot(logs['epoch'], logs['MRR'], label = 'MRR', color = next(color))
+    axes[2].legend()
+    axes[2].set_xlim(left = 0)
+    axes[2].set_xticks(ticks = list(range(0, logs['epoch'].max() + 1, 2)))
+    axes[2].grid(axis = 'y')
+    axes[2].set_xlabel(xlabel = 'epoch')
+    axes[2].set_ylabel(ylabel = 'performance')
+    axes[2].set_title(label = 'Validation Performance')
     
     fig.tight_layout()
     fig.savefig(fname = os.path.join(FIGURE_DIR, 'training_logs.png'))
@@ -80,7 +94,7 @@ def show_weight() -> None:
 
 def main() -> None:
     draw_training_logs()
-    show_weight()
+    # show_weight()
 
 
 if __name__ == '__main__':
